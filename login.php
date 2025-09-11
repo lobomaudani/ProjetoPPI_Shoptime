@@ -1,3 +1,53 @@
+<?php
+// Inicia a sessão
+session_start();
+
+include_once "connection/conectarBD.php";
+$mensagem_status = '';
+$tipo_mensagem = '';
+$usuarios = [];
+
+// Verifica se o formulário foi enviado
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    // Credenciais de exemplo (em um ambiente real, você usaria um banco de dados)
+    try {
+
+        $stmt = $conexao->prepare("SELECT id, nome, senha FROM usuarios WHERE nome = ?");
+        $stmt->execute([$username]);
+        $usuario = $stmt->fetch();
+
+    } catch (PDOException $e) {
+        $tipo_mensagem = 'error';
+        $mensagem_status = "Erro: " . $e->getMessage();
+
+    }
+
+    if ($username === $usuario['nome'] && $password === $usuario['senha']) {
+        // Autenticação bem-sucedida
+        session_regenerate_id(true); //utilizado para protecao Session Fixation
+        // 1. Armazena o nome de usuário na sessão
+        $_SESSION['loggedin'] = true;
+        $_SESSION['username'] = $username;
+
+        // 2. Define um cookie para "lembrar-me" por 7 dias
+        if (isset($_POST['rememberme'])) {
+            $cookie_name = 'user_login';
+            $cookie_value = $username;
+            $cookie_expire = time() + (60 * 60 * 24 * 7);
+            setcookie($cookie_name, $cookie_value, $cookie_expire, '/');
+        }
+        // Redireciona para a página de dashboard
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $error = 'Usuário ou senha inválidos.';
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -64,7 +114,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="login.php" method="POST">
+                <form action="register.php" method="POST">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email:</label>
                         <input type="text" class="form-control" id="email" name="email" required>
