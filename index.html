@@ -13,19 +13,6 @@
             font-family: Arial, sans-serif;
         }
 
-        /* Cabeçalho fixo */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: #fff;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 20px;
-        }
-
         .logo {
             font-size: 1.5em;
             font-weight: bold;
@@ -64,8 +51,7 @@
             display: flex;
             align-items: center;
             padding: 10px 20px;
-            background: #f9f9f9;
-            border-bottom: 1px solid #eee;
+            background: #fc606c;
         }
 
         /* Carrossel de banners */
@@ -187,13 +173,14 @@
         /* HEADER (TOPO) */
         /* ----------------------- */
         header {
-            background: #e63946;
+            background: #ff4553;
             /* Vermelho principal */
             padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: #fff;
+            border-bottom: 1px solid #ad4048;
         }
 
         header .logo {
@@ -381,13 +368,14 @@
 
     <!-- Cabeçalho principal -->
     <header>
-        <div class="logo">ShowTime</div>
+        <a href="index.html"><img src="images/showtime-logo.png" alt="Promoção 3" width="160" height="40" /></a>
         <div class="search-bar">
             <input type="text" placeholder="Procure seu produto aqui" />
         </div>
         <div class="user-actions">
-            <button onclick="location.href='/login'">Entre</button>
-            <button onclick="location.href='/signup'">Cadastre-se</button>
+            <p><button onclick="location.href='login.php'"><ins>Entre</ins></button> ou<br>
+                <button onclick="location.href='/signup'"><ins>Cadastre-se</ins></button>
+            </p>
             <button title="Favoritos">❤</button>
             <button title="Carrinho">🛒</button>
         </div>
