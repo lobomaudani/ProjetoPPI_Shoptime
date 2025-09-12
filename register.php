@@ -1,3 +1,59 @@
+<?php
+$error = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $password = $_POST["password"];
+    $passwordConfirm = $_POST["password-confirm"];
+
+    if ($password != $passwordConfirm) {
+        $error = "As senhas não estão validando entre si!";
+    } else {
+        include 'connections/conectarBD.php';
+
+        $autorizadoInsercao = true;
+        $nome = $_POST["username"];
+        $cpf = $_POST["cpf"];
+        $email = $_POST["email"];        
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
+        try {
+            $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = ':Email'");
+            $stmtEmail->execute([':email' => $email]);        
+
+            $stmtCpf = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE cpf = :CPF");
+            $stmtCpf->execute([':cpf' => $cpf]);
+
+            if ($stmtEmail->fetchColumn() > 0) {
+                $tipo_mensagem = 'error';
+                $mensagem_status = "Este e-mail já está cadastrado.";
+                $autorizadoInsercao = false;
+            } else if($stmtCpf->fetchColumn() > 0){
+                $tipo_mensagem = 'error';
+                $mensagem_status = "Este CPF já está cadastrado.";
+                $autorizadoInsercao = false;
+            }
+
+            if($autorizadoInsercao) {
+                $stmt = $conexao->prepare("INSERT INTO usuarios (Nome, CPF, Email, Senha)
+                                                    VALUES (':nome', :cpf, ':email', ':senha')");
+                $stmt->execute([
+                    ':nome' => $nome,
+                    ':cpf' => $cpf,
+                    ':email' => $email,
+                    ':senha' => $passwordHash
+                ]);
+                $tipo_mensagem = 'success';
+                $error = "Cadastro realizado com sucesso!";
+            }
+        } catch (PDOException $e) {
+            $tipo_mensagem = 'error';
+            $error = "Erro no banco de dados: " . $e->getMessage();
+        }
+    }
+} else {
+
+}
+?>
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -5,7 +61,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="stylesLoginRegister.css" rel="stylesheet">
+    <link href="styles/stylesLoginRegister.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <title>ShowTime - Login</title>
 
@@ -28,7 +84,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="login.php" method="POST">
+                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
                     <div class="mb-3">
                         <label for="username" class="form-label">Nome Completo:</label>
                         <input type="text" class="form-control" id="username" name="username" required>
@@ -50,12 +106,8 @@
                         <input type="password" class="form-control" id="password-confirm" name="password-confirm"
                             required>
                     </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="rememberme" name="rememberme">
-                        <label class="form-check-label" for="rememberme">Lembrar-me</label>
-                    </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Entrar</button>
+                        <button type="submit" id="submitBtn" class="btn btn-primary">Entrar</button>
                     </div>
                 </form>
             </div>
@@ -63,7 +115,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
+    <!-- <?php //} ?> -->
 </body>
 
 </html>

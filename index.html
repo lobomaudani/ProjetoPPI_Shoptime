@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ShowTime</title>
     <style>
-        /* Reset básico e tipografia */
         body {
             margin: 0;
             padding: 0;
@@ -46,7 +45,6 @@
             color: #c1121f;
         }
 
-        /* Navegação de categorias */
         nav.nav-categories {
             display: flex;
             align-items: center;
@@ -54,7 +52,7 @@
             background: #fc606c;
         }
 
-        /* Carrossel de banners */
+
         .carousel {
             position: relative;
             overflow: hidden;
@@ -79,7 +77,6 @@
             display: block;
         }
 
-        /* Recomendações em grade */
         .recommendations {
             max-width: 1200px;
             margin: 20px auto;
@@ -127,7 +124,6 @@
             cursor: pointer;
         }
 
-        /* Chat flutuante */
         .chat-widget {
             position: fixed;
             bottom: 20px;
@@ -169,12 +165,9 @@
             color: #333;
         }
 
-        /* ----------------------- */
-        /* HEADER (TOPO) */
-        /* ----------------------- */
+
         header {
             background: #ff4553;
-            /* Vermelho principal */
             padding: 10px 20px;
             display: flex;
             justify-content: space-between;
@@ -217,9 +210,6 @@
             font-size: 0.9rem;
         }
 
-        /* ----------------------- */
-        /* MENU NAV */
-        /* ----------------------- */
         nav {
             background: #c1121f;
             padding: 8px 20px;
@@ -238,9 +228,6 @@
             text-decoration: underline;
         }
 
-        /* ----------------------- */
-        /* CARROSSEL (IMAGEM) */
-        /* ----------------------- */
         .carousel {
             width: 100%;
             max-height: 250px;
@@ -275,9 +262,6 @@
             right: 10px;
         }
 
-        /* ----------------------- */
-        /* RECOMENDAÇÕES */
-        /* ----------------------- */
         section.recomendacoes {
             padding: 30px 20px;
         }
@@ -350,9 +334,6 @@
             font-size: 0.8rem;
         }
 
-        /* ----------------------- */
-        /* RODAPÉ */
-        /* ----------------------- */
         footer {
             background: #1d3557;
             color: #fff;
@@ -360,6 +341,10 @@
             padding: 15px;
             margin-top: 40px;
             font-size: 0.9rem;
+        }
+
+        .user-actions-links {
+            color: #fff;
         }
     </style>
 </head>
@@ -373,8 +358,8 @@
             <input type="text" placeholder="Procure seu produto aqui" />
         </div>
         <div class="user-actions">
-            <a href="login.php"><ins>Entre</ins></a></button> ou<br>
-            <a href="register.php"><ins>Cadastre-se</a></ins></button>
+            <a href="login.php" class="user-actions-links"><ins>Entre</ins></a></button> ou<br>
+            <a href="register.php" class="user-actions-links"><ins>Cadastre-se</a></ins></button>
             <button title="Favoritos">❤</button>
             <button title="Carrinho">🛒</button>
         </div>

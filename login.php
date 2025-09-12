@@ -1,18 +1,15 @@
 <?php
-// Inicia a sessão
 session_start();
 
-include_once "connection/conectarBD.php";
+include_once "connections/conectarBD.php";
 $mensagem_status = '';
 $tipo_mensagem = '';
 $usuarios = [];
 
-// Verifica se o formulário foi enviado
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Credenciais de exemplo (em um ambiente real, você usaria um banco de dados)
     try {
 
         $stmt = $conexao->prepare("SELECT id, nome, senha FROM usuarios WHERE nome = ?");
@@ -22,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (PDOException $e) {
         $tipo_mensagem = 'error';
         $mensagem_status = "Erro: " . $e->getMessage();
-
     }
 
     if ($username === $usuario['nome'] && $password === $usuario['senha']) {
