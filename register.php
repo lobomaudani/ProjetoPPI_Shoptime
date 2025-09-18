@@ -1,6 +1,11 @@
 <?php
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // echo $password = $_POST["password"];
+    // echo $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+    // var_dump (password_verify($password, $passwordHash));
+    // exit;
+
     $password = $_POST["password"];
     $passwordConfirm = $_POST["password-confirm"];
 
@@ -13,13 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nome = $_POST["username"];
         $cpf = $_POST["cpf"];
         $email = $_POST["email"];        
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        $passwordHash = base64_encode($password);
 
         try {
-            $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = ':Email'");
+            $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email");
             $stmtEmail->execute([':email' => $email]);        
 
-            $stmtCpf = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE cpf = :CPF");
+            $stmtCpf = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE cpf = :cpf");
             $stmtCpf->execute([':cpf' => $cpf]);
 
             if ($stmtEmail->fetchColumn() > 0) {
@@ -32,17 +37,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $autorizadoInsercao = false;
             }
 
+            $idCargo = 1;
+
             if($autorizadoInsercao) {
-                $stmt = $conexao->prepare("INSERT INTO usuarios (Nome, CPF, Email, Senha)
-                                                    VALUES (':nome', :cpf, ':email', ':senha')");
+                $stmt = $conexao->prepare("INSERT INTO usuarios (nome, cpf, email, senha, Cargos_idCargos)
+                                                    VALUES (:nome, :cpf, :email, :senha, :cargo)");
                 $stmt->execute([
                     ':nome' => $nome,
                     ':cpf' => $cpf,
                     ':email' => $email,
-                    ':senha' => $passwordHash
+                    ':senha' => $passwordHash,
+                    ':cargo' => $idCargo
                 ]);
+
                 $tipo_mensagem = 'success';
                 $error = "Cadastro realizado com sucesso!";
+
+                $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = ?");
+                $stmt->execute([$email]);
+                $usuario = $stmt->fetch();
+                session_regenerate_id(true); 
+                $_SESSION['loggedin'] = true;
+                $_SESSION['email'] = $email;
+                $_SESSION['nome'] = $usuario['nome'];
+
+                header('Location: index.html');
+                exit;
             }
         } catch (PDOException $e) {
             $tipo_mensagem = 'error';

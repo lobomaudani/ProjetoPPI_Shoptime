@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ShowTime</title>
+    <link rel="icon" href="images/favicon.ico">
     <style>
         body {
             margin: 0;
@@ -24,10 +25,12 @@
             border-radius: 4px;
         }
 
+        
+
         .user-actions button,
         .nav-categories button,
         .nav-categories select {
-            margin-left: 10px;
+            margin-left: 30px;
             padding: 6px 12px;
             border: none;
             background: #c1121f;
@@ -51,7 +54,6 @@
             padding: 10px 20px;
             background: #fc606c;
         }
-
 
         .carousel {
             position: relative;
@@ -165,7 +167,6 @@
             color: #333;
         }
 
-
         header {
             background: #ff4553;
             padding: 10px 20px;
@@ -191,7 +192,7 @@
             width: 100%;
             padding: 8px 12px;
             border: none;
-            border-radius: 4px 0 0 4px;
+            border-radius: 4px 4px 4px 4px;
         }
 
         header .search-bar button {
@@ -199,7 +200,7 @@
             border: none;
             background: #d62828;
             color: #fff;
-            border-radius: 0 4px 4px 0;
+            border-radius: 4px 4px 4px 4px;
             cursor: pointer;
         }
 
@@ -353,15 +354,14 @@
 
     <!-- Cabeçalho principal -->
     <header>
-        <a href="index.html"><img src="images/showtime-logo.png" alt="Promoção 3" width="160" height="40" /></a>
+        <a href="index.html"><img src="images/showtime-logo.png" alt="ShowTime Logo" width="160" height="40" /></a>
         <div class="search-bar">
             <input type="text" placeholder="Procure seu produto aqui" />
         </div>
         <div class="user-actions">
             <a href="login.php" class="user-actions-links"><ins>Entre</ins></a></button> ou<br>
             <a href="register.php" class="user-actions-links"><ins>Cadastre-se</a></ins></button>
-            <button title="Favoritos">❤</button>
-            <button title="Carrinho">🛒</button>
+            <a href="index.html"><img src="images/icon-fav.png" alt="Lista de Favoritos" width="30" height="30" /></a>
         </div>
     </header>
 

@@ -36,6 +36,12 @@ header .logo {
 
 .btn-primary:hover {
     background-color: #8a1816 !important;
+    border-color: #6b1311 !important;
+}
+
+.btn-primary:focus {
+    background-color: #8a1816 !important;
+    border-color: #6b1311 !important;
 }
 
 .link-register {
