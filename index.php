@@ -4,20 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="styles/styles.css" rel="stylesheet">
     <title>ShowTime</title>
     <link rel="icon" href="images/favicon.ico">
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .logo {
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-
+       
         .search-bar input {
             width: 300px;
             padding: 6px 10px;
@@ -25,9 +16,6 @@
             border-radius: 4px;
         }
 
-        
-
-        .user-actions button,
         .nav-categories button,
         .nav-categories select {
             margin-left: 30px;
@@ -37,15 +25,6 @@
             color: #fff;
             border-radius: 4px;
             cursor: pointer;
-        }
-
-        .user-actions button {
-            background: transparent;
-            color: #333;
-        }
-
-        .user-actions button:hover {
-            color: #c1121f;
         }
 
         nav.nav-categories {
@@ -124,109 +103,6 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-        }
-
-        .chat-widget {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            height: 380px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            background: #0078d4;
-            color: #fff;
-            padding: 12px;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            font-weight: bold;
-        }
-
-        .chat-body {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        body {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        header {
-            background: #ff4553;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #fff;
-            border-bottom: 1px solid #ad4048;
-        }
-
-        header .logo {
-            font-size: 1.6rem;
-            font-weight: bold;
-        }
-
-        header .search-bar {
-            flex: 1;
-            margin: 0 20px;
-            display: flex;
-        }
-
-        header .search-bar input {
-            width: 100%;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px 4px 4px 4px;
-        }
-
-        header .search-bar button {
-            padding: 8px 12px;
-            border: none;
-            background: #d62828;
-            color: #fff;
-            border-radius: 4px 4px 4px 4px;
-            cursor: pointer;
-        }
-
-        header .icons {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        nav {
-            background: #c1121f;
-            padding: 8px 20px;
-            display: flex;
-            gap: 20px;
-        }
-
-        nav a {
-            color: #fff;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: bold;
-        }
-
-        nav a:hover {
-            text-decoration: underline;
         }
 
         .carousel {
@@ -335,35 +211,58 @@
             font-size: 0.8rem;
         }
 
-        footer {
-            background: #1d3557;
-            color: #fff;
-            text-align: center;
-            padding: 15px;
-            margin-top: 40px;
-            font-size: 0.9rem;
-        }
-
         .user-actions-links {
             color: #fff;
+        }
+
+        /* Ocultar o pop-up por padrão */
+        .popup {
+        display: none; /* Oculto por padrão */
+        position: fixed; /* Posicionamento fixo */
+        z-index: 1; /* Fica por cima de outros elementos */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Permite rolagem se o conteúdo for grande */
+        background-color: rgba(0,0,0,0.5); /* Cor de fundo semitransparente */
+        }
+
+        .popup-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* Centraliza o pop-up */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Largura do conteúdo */
+        max-width: 500px; /* Largura máxima */
+        position: relative;
+        }
+
+        .close-btn {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+        color: black;
+        text-decoration: none;
+        }
+
+        /* Estilos para quando o pop-up é ativado */
+        .popup.active {
+        display: block; /* Torna o pop-up visível */
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Cabeçalho principal -->
-    <header>
-        <a href="index.html"><img src="images/showtime-logo.png" alt="ShowTime Logo" width="160" height="40" /></a>
-        <div class="search-bar">
-            <input type="text" placeholder="Procure seu produto aqui" />
-        </div>
-        <div class="user-actions">
-            <a href="login.php" class="user-actions-links"><ins>Entre</ins></a></button> ou<br>
-            <a href="register.php" class="user-actions-links"><ins>Cadastre-se</a></ins></button>
-            <a href="index.html"><img src="images/icon-fav.png" alt="Lista de Favoritos" width="30" height="30" /></a>
-        </div>
-    </header>
+    <?php include 'includes/header.inc'; ?>
+    <!-- <?php //include 'includes/chat.inc'; ?> -->
 
     <!-- Navegação de categorias e botões -->
     <nav class="nav-categories">
@@ -398,17 +297,58 @@
                 <p>5.0 ★★★★★ (1.527)</p>
                 <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
             </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
             <!-- Duplicar .product-card conforme necessário para novos itens -->
         </div>
-    </section>
-
-    <!-- Chat flutuante -->
-    <div class="chat-widget">
-        <div class="chat-header">Atendimento</div>
-        <div class="chat-body">
-            <!-- Mensagens e campo de entrada futuros -->
-        </div>
-    </div>
+    </section>    
 
     <script>
         // Função de filtro de categorias (lookup)

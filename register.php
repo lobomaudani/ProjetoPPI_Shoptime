@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // echo $password = $_POST["password"];
@@ -6,8 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // var_dump (password_verify($password, $passwordHash));
     // exit;
 
-    $password = $_POST["password"];
-    $passwordConfirm = $_POST["password-confirm"];
+    $password = htmlspecialchars(trim($_POST["password"]));
+    $passwordConfirm = htmlspecialchars(trim($_POST["password-confirm"]));
 
     if ($password != $passwordConfirm) {
         $error = "As senhas não estão validando entre si!";
@@ -18,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nome = $_POST["username"];
         $cpf = $_POST["cpf"];
         $email = $_POST["email"];        
-        $passwordHash = base64_encode($password);
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
         try {
             $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email");
@@ -61,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['email'] = $email;
                 $_SESSION['nome'] = $usuario['nome'];
 
-                header('Location: index.html');
+                header('Location: index.php');
                 exit;
             }
         } catch (PDOException $e) {
@@ -81,16 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="styles/stylesLoginRegister.css" rel="stylesheet">
+    <link href="styles/styles.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>ShowTime - Login</title>
+    <link rel="icon" href="images/favicon.ico">
+    <title>ShowTime - Cadastrar-se</title>
 
 </head>
 
 <body>
 
     <header>
-        <a href="index.html"><img src="images/showtime-logo.png" alt="Promoção 3" width="160" height="40" /></a>
+        <?php include 'includes/logo.inc'; ?>
     </header>
 
     <div class="container">

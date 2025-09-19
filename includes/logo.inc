@@ -1,0 +1,1 @@
+<a href="index.php"><img src="images/showtime-logo.png" alt="Promoção 3" width="160" height="40" /></a>

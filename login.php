@@ -6,22 +6,16 @@ $mensagem_status = '';
 $tipo_mensagem = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = htmlspecialchars(trim($_POST['email']));
+    $password = htmlspecialchars(trim($_POST["password"]));
 
     try {
 
-        $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = ?");
-        $stmt->execute([$email]);
+        $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = :email");
+        $stmt->execute([':email' => $email]);
         $usuario = $stmt->fetch();
-
-        // echo $email;
-        // var_dump($usuario['email']);
-        // $verficado = password_verify($password, $usuario['senha']);
-
-        // var_dump ($verificado;
-
-        if (($email == $usuario['email']) && ($senha == base64_decode($usuario['senha']))) {
+        
+        if ($usuario && (password_verify($password,$usuario['senha']))) {
             // Autenticação bem-sucedida
             session_regenerate_id(true); 
             $_SESSION['loggedin'] = true;
@@ -35,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cookie_expire = time() + (60 * 60 * 24 * 7);
                 setcookie($cookie_name, $cookie_value, $cookie_expire, '/');
             }
-            header('Location: index.html');
+            header('Location: index.php');
             exit;
         } else {
             $error = 'Usuário ou senha inválidos.';
@@ -55,15 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="styles/stylesLoginRegister.css" rel="stylesheet">
+    <link href="styles/styles.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>ShowTime - Login</title>
+    <link rel="icon" href="images/favicon.ico">
+    <title>ShowTime - Entrar</title>
 </head>
 
 <body>
 
     <header>
-        <a href="index.html"><img src="images/showtime-logo.png" alt="Promoção 3" width="160" height="40" /></a>
+        <?php include 'includes/logo.inc'; ?>
     </header>
 
     <div class="container">
