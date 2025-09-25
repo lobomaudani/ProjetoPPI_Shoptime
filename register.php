@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cpf = $_POST["cpf"];
         $email = $_POST["email"];        
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        // $passwordHash = base64_encode($password);
 
         try {
             $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email");
@@ -87,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="icon" href="images/favicon.ico">
     <title>ShowTime - Cadastrar-se</title>
-
 </head>
 
 <body>
