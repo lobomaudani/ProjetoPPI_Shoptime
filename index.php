@@ -4,33 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="styles/styles.css" rel="stylesheet">
     <title>ShowTime</title>
+    <link rel="icon" href="images/favicon.ico">
     <style>
-        /* Reset básico e tipografia */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        /* Cabeçalho fixo */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: #fff;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 20px;
-        }
-
-        .logo {
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-
+       
         .search-bar input {
             width: 300px;
             padding: 6px 10px;
@@ -38,10 +16,9 @@
             border-radius: 4px;
         }
 
-        .user-actions button,
         .nav-categories button,
         .nav-categories select {
-            margin-left: 10px;
+            margin-left: 30px;
             padding: 6px 12px;
             border: none;
             background: #c1121f;
@@ -50,25 +27,13 @@
             cursor: pointer;
         }
 
-        .user-actions button {
-            background: transparent;
-            color: #333;
-        }
-
-        .user-actions button:hover {
-            color: #c1121f;
-        }
-
-        /* Navegação de categorias */
         nav.nav-categories {
             display: flex;
             align-items: center;
             padding: 10px 20px;
-            background: #f9f9f9;
-            border-bottom: 1px solid #eee;
+            background: #fc606c;
         }
 
-        /* Carrossel de banners */
         .carousel {
             position: relative;
             overflow: hidden;
@@ -93,7 +58,6 @@
             display: block;
         }
 
-        /* Recomendações em grade */
         .recommendations {
             max-width: 1200px;
             margin: 20px auto;
@@ -141,119 +105,6 @@
             cursor: pointer;
         }
 
-        /* Chat flutuante */
-        .chat-widget {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            height: 380px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chat-header {
-            background: #0078d4;
-            color: #fff;
-            padding: 12px;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            font-weight: bold;
-        }
-
-        .chat-body {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        body {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        /* ----------------------- */
-        /* HEADER (TOPO) */
-        /* ----------------------- */
-        header {
-            background: #e63946;
-            /* Vermelho principal */
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #fff;
-        }
-
-        header .logo {
-            font-size: 1.6rem;
-            font-weight: bold;
-        }
-
-        header .search-bar {
-            flex: 1;
-            margin: 0 20px;
-            display: flex;
-        }
-
-        header .search-bar input {
-            width: 100%;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px 0 0 4px;
-        }
-
-        header .search-bar button {
-            padding: 8px 12px;
-            border: none;
-            background: #d62828;
-            color: #fff;
-            border-radius: 0 4px 4px 0;
-            cursor: pointer;
-        }
-
-        header .icons {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        /* ----------------------- */
-        /* MENU NAV */
-        /* ----------------------- */
-        nav {
-            background: #c1121f;
-            padding: 8px 20px;
-            display: flex;
-            gap: 20px;
-        }
-
-        nav a {
-            color: #fff;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: bold;
-        }
-
-        nav a:hover {
-            text-decoration: underline;
-        }
-
-        /* ----------------------- */
-        /* CARROSSEL (IMAGEM) */
-        /* ----------------------- */
         .carousel {
             width: 100%;
             max-height: 250px;
@@ -288,9 +139,6 @@
             right: 10px;
         }
 
-        /* ----------------------- */
-        /* RECOMENDAÇÕES */
-        /* ----------------------- */
         section.recomendacoes {
             padding: 30px 20px;
         }
@@ -363,35 +211,58 @@
             font-size: 0.8rem;
         }
 
-        /* ----------------------- */
-        /* RODAPÉ */
-        /* ----------------------- */
-        footer {
-            background: #1d3557;
+        .user-actions-links {
             color: #fff;
-            text-align: center;
-            padding: 15px;
-            margin-top: 40px;
-            font-size: 0.9rem;
+        }
+
+        /* Ocultar o pop-up por padrão */
+        .popup {
+        display: none; /* Oculto por padrão */
+        position: fixed; /* Posicionamento fixo */
+        z-index: 1; /* Fica por cima de outros elementos */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Permite rolagem se o conteúdo for grande */
+        background-color: rgba(0,0,0,0.5); /* Cor de fundo semitransparente */
+        }
+
+        .popup-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* Centraliza o pop-up */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Largura do conteúdo */
+        max-width: 500px; /* Largura máxima */
+        position: relative;
+        }
+
+        .close-btn {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+        color: black;
+        text-decoration: none;
+        }
+
+        /* Estilos para quando o pop-up é ativado */
+        .popup.active {
+        display: block; /* Torna o pop-up visível */
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Cabeçalho principal -->
-    <header>
-        <div class="logo">ShowTime</div>
-        <div class="search-bar">
-            <input type="text" placeholder="Procure seu produto aqui" />
-        </div>
-        <div class="user-actions">
-            <button onclick="location.href='/login'">Entre</button>
-            <button onclick="location.href='/signup'">Cadastre-se</button>
-            <button title="Favoritos">❤</button>
-            <button title="Carrinho">🛒</button>
-        </div>
-    </header>
+    <?php include 'includes/header.inc'; ?>
+    <!-- <?php //include 'includes/chat.inc'; ?> -->
 
     <!-- Navegação de categorias e botões -->
     <nav class="nav-categories">
@@ -426,17 +297,58 @@
                 <p>5.0 ★★★★★ (1.527)</p>
                 <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
             </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
+            <div class="product-card">
+                <img src="images/produto1.jpg" alt="Desktop Completo" />
+                <h3>Produto Amostra</h3>
+                <p><del>R$ 2.000,00</del> <strong>R$ 1.000,00</strong> (-50%)</p>
+                <p>5.0 ★★★★★ (1.527)</p>
+                <button onclick="location.href='/produto/amostra'">Ver Detalhes</button>
+            </div>
             <!-- Duplicar .product-card conforme necessário para novos itens -->
         </div>
-    </section>
-
-    <!-- Chat flutuante -->
-    <div class="chat-widget">
-        <div class="chat-header">Atendimento</div>
-        <div class="chat-body">
-            <!-- Mensagens e campo de entrada futuros -->
-        </div>
-    </div>
+    </section>    
 
     <script>
         // Função de filtro de categorias (lookup)
