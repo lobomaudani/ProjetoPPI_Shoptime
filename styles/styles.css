@@ -21,7 +21,7 @@ body {
 header {
     background: #ff4553;
     padding: 10px 20px;
-    display: flex;
+    /* display: flex; */
     justify-content: space-between;
     align-items: center;
     color: #fff;
@@ -36,7 +36,7 @@ header .logo {
 header .search-bar {
     flex: 1;
     margin: 0 20px;
-    display: flex;
+    /* display: flex; */
 }
 
 header .search-bar input {
@@ -56,7 +56,7 @@ header .search-bar button {
 }
 
 header .icons {
-    display: flex;
+    /* display: flex; */
     gap: 15px;
     align-items: center;
     font-size: 0.9rem;
@@ -65,7 +65,7 @@ header .icons {
 nav {
     background: #c1121f;
     padding: 8px 20px;
-    display: flex;
+    /* display: flex; */
     gap: 20px;
 }
 
@@ -101,7 +101,7 @@ footer {
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    display: flex;
+    /* display: flex; */
     flex-direction: column;
 }
 
@@ -152,7 +152,7 @@ footer {
 }
 
 header {
-    display: flex;
+    /* display: flex; */
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
@@ -172,7 +172,7 @@ header .search-bar {
 }
 
 header .search-bar form {
-    display: flex;
+    /* display: flex; */
     width: 100%;
 }
 
@@ -194,11 +194,13 @@ header .search-bar button {
     font-weight: bold;
 }
 
-header .user-actions {
+.user-actions {
+    width: 100px;
+    border: 1px solid;
     flex-shrink: 0;
-    display: flex;
     gap: 10px;
     align-items: center;
     font-size: 0.9rem;
     color: #fff;
+    word-break: break-all;
 }

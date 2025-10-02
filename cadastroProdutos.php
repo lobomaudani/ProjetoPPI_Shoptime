@@ -1,4 +1,11 @@
 <?php
+
+session_start();
+
+include_once "connections/conectarBD.php";
+$mensagem_status    = '';
+$tipo_mensagem      = '';
+
 // Recebe os dados do formulário
 $nome      = $_POST['nome'];
 $descricao = $_POST['descricao'];
