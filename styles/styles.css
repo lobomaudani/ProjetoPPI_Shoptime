@@ -168,7 +168,9 @@ header .logo {
 
 header .search-bar {
     flex: 1;
-    margin: 0 15px;
+    /* margin: 0 15px; */
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 header .search-bar form {
@@ -196,11 +198,21 @@ header .search-bar button {
 
 .user-actions {
     width: 100px;
-    border: 1px solid;
     flex-shrink: 0;
     gap: 10px;
     align-items: center;
-    font-size: 0.9rem;
     color: #fff;
     word-break: break-all;
+}
+
+.user-actions-links {
+    color: #fff;
+    display: block;
+}
+
+.user-actions-line {
+    align-items: center;
+    display: block;
+    color: #fff;
+    font-size: 10px;
 }

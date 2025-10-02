@@ -1,3 +1,6 @@
+<?php 
+    session_start();
+?>
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -209,10 +212,6 @@
         .produto-card .reviews {
             color: #666;
             font-size: 0.8rem;
-        }
-
-        .user-actions-links {
-            color: #fff;
         }
 
         /* Ocultar o pop-up por padrão */

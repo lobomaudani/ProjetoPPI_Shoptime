@@ -1,7 +1,7 @@
 <header>
     <?php include 'logo.inc'; ?>
 
-    <div class="search-bar" style="margin: 10px 0;">
+    <div class="search-bar" style="margin: 10px 10px;">
         <form action="pesquisaProdutos.php" method="GET" class="d-flex" role="search">
             <input class="form-control me-2" type="search" name="q" 
                    placeholder="Buscar produtos..." 
