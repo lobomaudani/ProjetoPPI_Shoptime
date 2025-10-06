@@ -62,6 +62,64 @@ header .icons {
     font-size: 0.9rem;
 }
 
+header .logo {
+    flex-shrink: 0;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+header .search-bar {
+    flex: 1;
+    /* margin: 0 15px; */
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+header .search-bar form {
+    display: flex;
+    width: 100%;
+}
+
+header .search-bar input[type="search"] {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px 0 0 4px;
+    border: none;
+    font-size: 1rem;
+}
+
+header .search-bar button {
+    padding: 8px 16px;
+    border-radius: 0 4px 4px 0;
+    border: none;
+    background-color: #c1121f;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.user-actions {
+    width: 100px;
+    flex-shrink: 0;
+    gap: 10px;
+    align-items: center;
+    color: #fff;
+    word-break: break-all;
+}
+
+.user-actions-links {
+    color: #fff;
+    display: block;
+}
+
+.user-actions-line {
+    align-items: center;
+    display: block;
+    color: #fff;
+    font-size: 10px;
+}
+
 nav {
     background: #c1121f;
     padding: 8px 20px;
@@ -149,70 +207,4 @@ footer {
 
 .link-register {
     color: #e32c29;
-}
-
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    background-color: #ff4553;
-}
-
-header .logo {
-    flex-shrink: 0;
-    font-size: 1.6rem;
-    font-weight: bold;
-    color: #fff;
-}
-
-header .search-bar {
-    flex: 1;
-    /* margin: 0 15px; */
-    margin-left: 10px;
-    margin-right: 10px;
-}
-
-header .search-bar form {
-    display: flex;
-    width: 100%;
-}
-
-header .search-bar input[type="search"] {
-    flex: 1;
-    padding: 8px 12px;
-    border-radius: 4px 0 0 4px;
-    border: none;
-    font-size: 1rem;
-}
-
-header .search-bar button {
-    padding: 8px 16px;
-    border-radius: 0 4px 4px 0;
-    border: none;
-    background-color: #c1121f;
-    color: #fff;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.user-actions {
-    width: 100px;
-    flex-shrink: 0;
-    gap: 10px;
-    align-items: center;
-    color: #fff;
-    word-break: break-all;
-}
-
-.user-actions-links {
-    color: #fff;
-    display: block;
-}
-
-.user-actions-line {
-    align-items: center;
-    display: block;
-    color: #fff;
-    font-size: 10px;
 }
