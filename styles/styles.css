@@ -110,12 +110,12 @@ header .search-bar button {
 
 .user-actions-links {
     color: #fff;
-    display: block;
+    /* display: block; */
 }
 
 .user-actions-line {
     align-items: center;
-    display: block;
+    /* display: block; */
     color: #fff;
     font-size: 10px;
 }
@@ -123,7 +123,7 @@ header .search-bar button {
 nav {
     background: #c1121f;
     padding: 8px 20px;
-    /* display: flex; */
+    display: flex;
     gap: 20px;
 }
 
