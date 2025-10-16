@@ -2,43 +2,62 @@
 session_start();
 
 include_once "connections/conectarBD.php";
-$mensagem_status = '';
-$tipo_mensagem = '';
+$mensagem_status    = '';
+$tipo_mensagem      = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = htmlspecialchars(trim($_POST['email']));
-    $password = htmlspecialchars(trim($_POST["password"]));
+    $password   = $_POST['password'];
+    $email = $_POST['email'];
 
-    try {
+    if (!$email) {
+        $error = 'Email inválido.';
+    } elseif ($password === '') {
+        $error = 'Senha não pode ser vazia.';
+    } else {
+        try {
+            $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha, Cargos_idCargos FROM usuarios WHERE email = :email");
+            $stmt->execute([':email' => $email]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-        $usuario = $stmt->fetch();
-        
-        if ($usuario && (password_verify($password,$usuario['senha']))) {
-            // Autenticação bem-sucedida
-            session_regenerate_id(true); 
-            $_SESSION['loggedin'] = true;
-            $_SESSION['email'] = $email;
-            $_SESSION['nome'] = $usuario['nome'];
+            if ($password == $usuario['senha']) {
+                // Verifica hash padrão (password_hash) primeiro
+                if ($usuario['senha'] == $password) {
 
-            // 2. Define um cookie para "lembrar-me" por 7 dias
-            if (isset($_POST['rememberme'])) {
-                $cookie_name = 'user_login';
-                $cookie_value = $email;
-                $cookie_expire = time() + (60 * 60 * 24 * 7);
-                setcookie($cookie_name, $cookie_value, $cookie_expire, '/');
+                    session_regenerate_id(true);
+                    $_SESSION['loggedin'] = true;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['nome'] = $usuario['nome'];
+                    $_SESSION['cargo'] = $usuario['Cargos_idCargos'];
+
+                    if (isset($_POST['rememberme'])) {
+                        $cookie_name    = 'user_login';
+                        $cookie_value   = $email;
+                        $cookie_expire  = time() + (60 * 60 * 24 * 7);
+                        $secure_flag    = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+                        // usa array de opções (PHP 7.3+)
+                        setcookie($cookie_name, $cookie_value, [
+                            'expires'  => $cookie_expire,
+                            'path'     => '/',
+                            'httponly' => true,
+                            'secure'   => $secure_flag,
+                            'samesite' => 'Lax'
+                        ]);
+                    }
+
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $error = 'Usuário ou senha inválidos.';
+                }
+            } else {
+                $error = 'Usuário ou senha inválidos.';
             }
-            header('Location: index.php');
-            exit;
-        } else {
-            $error = 'Usuário ou senha inválidos.';
-        }
 
-    } catch (PDOException $e) {
-        $tipo_mensagem = 'error';
-        $error = "Erro: " . $e->getMessage();
-    }    
+        } catch (PDOException $e) {
+            $tipo_mensagem  = 'error';
+            $error          = "Erro: " . $e->getMessage();
+        }
+    }
 }
 ?>
 
@@ -72,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
-                <form action="login.php" method="POST">
+                <form action="<?= $_SERVER['PHP_SELF']; ?>" method="POST">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email:</label>
                         <input type="text" class="form-control" id="email" name="email" required>

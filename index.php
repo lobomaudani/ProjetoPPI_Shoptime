@@ -1,3 +1,6 @@
+<?php 
+    session_start();
+?>
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -5,6 +8,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="styles/styles.css" rel="stylesheet">
+    <!-- Using only custom styles and scripts (no Materialize) -->
+    
     <title>ShowTime</title>
     <link rel="icon" href="images/favicon.ico">
     <style>
@@ -211,10 +216,6 @@
             font-size: 0.8rem;
         }
 
-        .user-actions-links {
-            color: #fff;
-        }
-
         /* Ocultar o pop-up por padrão */
         .popup {
         display: none; /* Oculto por padrão */
@@ -261,7 +262,7 @@
 
 <body>
 
-    <?php include 'includes/header.inc'; ?>
+    <?php include 'includes/header.php'; ?>
     <!-- <?php //include 'includes/chat.inc'; ?> -->
 
     <!-- Navegação de categorias e botões -->
@@ -366,6 +367,9 @@
         }
         setInterval(showNextSlide, 4000);
     </script>
+
+    <!-- User area is included by includes/header.php -->
+        <!-- No Materialize: using a small custom dropdown script in includes/header.php -->
 </body>
 
 </html>

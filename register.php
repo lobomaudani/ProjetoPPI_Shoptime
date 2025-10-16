@@ -8,26 +8,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // var_dump (password_verify($password, $passwordHash));
     // exit;
 
-    $password = htmlspecialchars(trim($_POST["password"]));
-    $passwordConfirm = htmlspecialchars(trim($_POST["password-confirm"]));
-
-    if ($password != $passwordConfirm) {
+    if ($_POST["password"] != $_POST["password-confirm"]) {
         $error = "As senhas não estão validando entre si!";
     } else {
         include 'connections/conectarBD.php';
 
         $autorizadoInsercao = true;
-        $nome = $_POST["username"];
-        $cpf = $_POST["cpf"];
-        $email = $_POST["email"];        
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
         try {
             $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email");
-            $stmtEmail->execute([':email' => $email]);        
+            $stmtEmail->execute([':email' => $_POST["email"]]);        
 
             $stmtCpf = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE cpf = :cpf");
-            $stmtCpf->execute([':cpf' => $cpf]);
+            $stmtCpf->execute([':cpf' => $_POST["cpf"]]);
 
             if ($stmtEmail->fetchColumn() > 0) {
                 $tipo_mensagem = 'error';
@@ -42,13 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idCargo = 1;
 
             if($autorizadoInsercao) {
+
+                // var_dump($_POST); exit;// Apenas para depuração, remova em produção
+                
                 $stmt = $conexao->prepare("INSERT INTO usuarios (nome, cpf, email, senha, Cargos_idCargos)
                                                     VALUES (:nome, :cpf, :email, :senha, :cargo)");
                 $stmt->execute([
-                    ':nome' => $nome,
-                    ':cpf' => $cpf,
-                    ':email' => $email,
-                    ':senha' => $passwordHash,
+                    ':nome' => $_POST["username"],
+                    ':cpf' => $_POST["cpf"],
+                    ':email' => $_POST["email"],
+                    ':senha' => $_POST["password"],
                     ':cargo' => $idCargo
                 ]);
 
@@ -87,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="icon" href="images/favicon.ico">
     <title>ShowTime - Cadastrar-se</title>
-
 </head>
 
 <body>

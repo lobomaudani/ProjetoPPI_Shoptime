@@ -62,6 +62,63 @@ header .icons {
     font-size: 0.9rem;
 }
 
+header .logo {
+    flex-shrink: 0;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+header .search-bar {
+    flex: 1;
+    /* margin: 0 15px; */
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+header .search-bar form {
+    display: flex;
+    width: 100%;
+}
+
+header .search-bar input[type="search"] {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px 0 0 4px;
+    border: none;
+    font-size: 1rem;
+}
+
+header .search-bar button {
+    padding: 8px 16px;
+    border-radius: 0 4px 4px 0;
+    border: none;
+    background-color: #c1121f;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    min-width: 220px;
+}
+
+.user-actions-links {
+    color: #fff;
+    /* display: block; */
+}
+
+.user-actions-line {
+    align-items: center;
+    /* display: block; */
+    color: #fff;
+    font-size: 15px;
+}
+
 nav {
     background: #c1121f;
     padding: 8px 20px;
@@ -101,7 +158,7 @@ footer {
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    display: flex;
+    /* display: flex; */
     flex-direction: column;
 }
 
@@ -149,4 +206,153 @@ footer {
 
 .link-register {
     color: #e32c29;
+}
+
+/* Classes da Página de Cadastro de Produtos */
+
+:root {
+    --primary: #e32c29;
+    /* ajuste para sua cor principal */
+    --card-radius: 10px;
+    --muted: #6c757d;
+}
+
+.product-card {
+    border-radius: var(--card-radius);
+    overflow: hidden;
+}
+
+.card-title {
+    color: var(--primary);
+    font-weight: 600;
+    border-bottom: 1px solid #f1f1f1;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.img-preview {
+    max-width: 160px;
+    max-height: 120px;
+    object-fit: contain;
+    background: #fff;
+    padding: 6px;
+}
+
+input.form-control,
+.form-select,
+textarea.form-control {
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    border-radius: 8px;
+    padding: 0.5rem 1.1rem;
+}
+
+.btn-outline-secondary {
+    border-radius: 8px;
+}
+
+@media (max-width: 576px) {
+    .img-preview {
+        max-width: 120px;
+        max-height: 90px;
+        margin: 0 auto 0.5rem;
+        display: block;
+    }
+}
+
+@media (min-width: 992px) {
+    .col-lg-7 {
+        flex: 0 0 auto;
+        width: 80%;
+    }
+}
+
+/* User area dropdown and favoritos (overlay popup) */
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    /* anchor para o menu */
+}
+
+/* small adjustments for user name trigger and favorite icon */
+.user-name-link {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.fav-link img {
+    filter: none;
+    display: inline-block;
+}
+
+/* Custom dropup behavior: when .user-area has .open, show the menu above the trigger */
+.user-area .user-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    /* default is dropup; JS will add .dropdown to override to show below */
+    bottom: calc(100% + 10px);
+    min-width: 200px;
+    background: #fff;
+    color: #333;
+    padding: 8px 0;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    list-style: none;
+    z-index: 10000;
+}
+
+.user-area.open .user-menu {
+    display: block;
+}
+
+/* dropdown variant: show below the trigger */
+.user-area .user-menu.dropdown {
+    top: calc(100% + 8px);
+    bottom: auto;
+}
+
+/* dropup variant: show above the trigger (default) */
+.user-area .user-menu.dropup {
+    bottom: calc(100% + 10px);
+    top: auto;
+}
+
+.user-menu li {
+    padding: 8px 16px;
+}
+
+.user-menu li a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+}
+
+.user-menu li a:hover {
+    background: #f5f5f5;
+}
+
+/* Pequena regra responsiva: centralizar menu em telas pequenas */
+@media (max-width: 480px) {
+    .user-menu {
+        right: 10px;
+        left: 10px;
+        bottom: calc(100% + 8px);
+    }
 }
