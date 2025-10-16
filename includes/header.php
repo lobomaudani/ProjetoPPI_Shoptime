@@ -12,7 +12,7 @@
         </form>
     </div>
 
-    <div class="user-actions" id="user-actions">    
+    <div class="user-actions" id="user-actions">
         <?php include __DIR__ . '/chamarHeader.php'; ?>
     </div>
     

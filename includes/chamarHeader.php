@@ -8,8 +8,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 if (empty($_SESSION['loggedin'])) {
     ?>
     <div class="user-actions-generic">
-        <div class="user-actions-line"><a href="screens/user/login.php">Entre</a> ou</div>
-        <div class="user-actions-line"><a href="screens/user/register.php" class="user-actions-links">Cadastre-se</a></div>
+        <div class="user-actions-line"><a href="login.php">Entre</a> ou</div>
+        <div class="user-actions-line"><a href="register.php" class="user-actions-links">Cadastre-se</a></div>
     </div>
     <?php
 } else {
@@ -23,10 +23,10 @@ if (empty($_SESSION['loggedin'])) {
 
         <!-- Menu (custom dropup) -->
         <ul id="user-dropdown" class="user-menu" role="menu" aria-labelledby="user-name-trigger">
-            <li role="none"><a role="menuitem" href="screens/user/usuario.php">Conta</a></li>
-            <li role="none"><a role="menuitem" href="screens/user/compras.php">Compras</a></li>
+            <li role="none"><a role="menuitem" href="usuario.php">Conta</a></li>
+            <li role="none"><a role="menuitem" href="compras.php">Compras</a></li>
             <li role="separator" class="divider" aria-hidden="true"></li>
-            <li role="none"><a role="menuitem" href="screens/user/logout.php">Sair</a></li>
+            <li role="none"><a role="menuitem" href="logout.php">Sair</a></li>
         </ul>
 
         <a href="favoritos.php" class="fav-link" title="Favoritos">
