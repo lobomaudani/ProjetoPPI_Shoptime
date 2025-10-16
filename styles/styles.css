@@ -100,7 +100,7 @@ header .search-bar button {
 }
 
 .user-actions {
-    width: 100px;
+    width: 300px;
     flex-shrink: 0;
     gap: 10px;
     align-items: center;
@@ -117,7 +117,7 @@ header .search-bar button {
     align-items: center;
     /* display: block; */
     color: #fff;
-    font-size: 10px;
+    font-size: 15px;
 }
 
 nav {

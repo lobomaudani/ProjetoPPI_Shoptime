@@ -6,42 +6,75 @@ $mensagem_status    = '';
 $tipo_mensagem      = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email      = $_POST['email'];
-    $password   = htmlspecialchars(trim($_POST['password']));
+    $emailRaw   = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $password   = isset($_POST['password']) ? trim($_POST['password']) : '';
 
-    try {
-        $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = ?");
-        //$stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = :email");
-        $stmt->execute([$email]);
+    // Validação básica do email
+    $email = filter_var($emailRaw, FILTER_VALIDATE_EMAIL);
+    if (!$email) {
+        $error = 'Email inválido.';
+    } elseif ($password === '') {
+        $error = 'Senha não pode ser vazia.';
+    } else {
+        try {
+            $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = :email");
+            $stmt->execute([':email' => $email]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // $stmt->execute([':email' => $email]);
+            if ($usuario) {
+                $storedHash = $usuario['senha'];
 
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+                // Verifica hash padrão (password_hash) primeiro
+                if (password_verify($password, $storedHash)) {
+                    $passwordOk = true;
+                } else {
+                    // Se a senha no banco estiver em texto plano, permite autenticar e rehash
+                    if ($storedHash === $password) {
+                        $passwordOk = true;
+                        // Re-hash da senha e atualização no banco
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $upd = $conexao->prepare("UPDATE usuarios SET senha = :senha WHERE idUsuarios = :id");
+                        $upd->execute([':senha' => $newHash, ':id' => $usuario['idUsuarios']]);
+                    } else {
+                        $passwordOk = false;
+                    }
+                }
 
-        if ($usuario && password_verify($mail, $usuario['senha'])){
-            // Autenticação bem-sucedida
-            session_regenerate_id(true); 
-            $_SESSION['loggedin']   = true;
-            $_SESSION['email']      = $email;
-            $_SESSION['nome']       = $usuario['nome'];
+                if ($passwordOk) {
+                    session_regenerate_id(true);
+                    $_SESSION['loggedin'] = true;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['nome'] = $usuario['nome'];
 
-            // 2. Define um cookie para "lembrar-me" por 7 dias
-            if (isset($_POST['rememberme'])) {
-                $cookie_name    = 'user_login';
-                $cookie_value   = $email;
-                $cookie_expire  = time() + (60 * 60 * 24 * 7);
-                setcookie($cookie_name, $cookie_value, $cookie_expire, '/');
+                    if (isset($_POST['rememberme'])) {
+                        $cookie_name    = 'user_login';
+                        $cookie_value   = $email;
+                        $cookie_expire  = time() + (60 * 60 * 24 * 7);
+                        $secure_flag    = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+                        // usa array de opções (PHP 7.3+)
+                        setcookie($cookie_name, $cookie_value, [
+                            'expires'  => $cookie_expire,
+                            'path'     => '/',
+                            'httponly' => true,
+                            'secure'   => $secure_flag,
+                            'samesite' => 'Lax'
+                        ]);
+                    }
+
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $error = 'Usuário ou senha inválidos.';
+                }
+            } else {
+                $error = 'Usuário ou senha inválidos.';
             }
-            header('Location: index.php');
-            exit;
-        } else {
-            $error = 'Usuário ou senha inválidos.';
-        }
 
-    } catch (PDOException $e) {
-        $tipo_mensagem  = 'error';
-        $error          = "Erro: " . $e->getMessage();
-    }    
+        } catch (PDOException $e) {
+            $tipo_mensagem  = 'error';
+            $error          = "Erro: " . $e->getMessage();
+        }
+    }
 }
 ?>
 
