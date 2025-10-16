@@ -100,12 +100,11 @@ header .search-bar button {
 }
 
 .user-actions {
-    width: 300px;
-    flex-shrink: 0;
-    gap: 10px;
+    display: flex;
     align-items: center;
+    gap: 10px;
     color: #fff;
-    word-break: break-all;
+    min-width: 220px;
 }
 
 .user-actions-links {
@@ -212,7 +211,7 @@ footer {
 /* Classes da Página de Cadastro de Produtos */
 
 :root {
-    --primary: #0d6efd;
+    --primary: #e32c29;
     /* ajuste para sua cor principal */
     --card-radius: 10px;
     --muted: #6c757d;
@@ -287,53 +286,28 @@ textarea.form-control {
     /* anchor para o menu */
 }
 
-.user-dropdown {
-    position: relative;
-    /* mantém o summary inline com o header */
+/* small adjustments for user name trigger and favorite icon */
+.user-name-link {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.fav-link img {
+    filter: none;
     display: inline-block;
 }
 
-/* Remover marcador padrão do summary e estilizar */
-.user-dropdown summary {
-    list-style: none;
-    cursor: pointer;
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    border-radius: 6px;
-}
-
-/* trocar indicador do summary (triângulo) por setinha simples */
-summary::-webkit-details-marker {
+/* Custom dropup behavior: when .user-area has .open, show the menu above the trigger */
+.user-area .user-menu {
     display: none;
-}
-
-.user-dropdown summary:after {
-    content: '▾';
-    margin-left: 6px;
-    font-size: 0.8em;
-}
-
-/* Backdrop quando o menu está aberto (sutileza) */
-.user-dropdown[open]::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    /* cobre toda a viewport */
-    background: rgba(0, 0, 0, 0.10);
-    z-index: 9990;
-}
-
-/* Menu como caixa sobreposta, fora do fluxo, sempre por cima */
-.user-menu {
     position: absolute;
-    /* posicionado relativo ao .user-dropdown */
     right: 0;
-    /* alinha à direita do summary */
-    top: calc(100% + 10px);
-    /* aparece abaixo do summary, com distância */
+    /* default is dropup; JS will add .dropdown to override to show below */
+    bottom: calc(100% + 10px);
     min-width: 200px;
     background: #fff;
     color: #333;
@@ -342,7 +316,22 @@ summary::-webkit-details-marker {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     list-style: none;
     z-index: 10000;
-    /* garante estar acima do conteúdo */
+}
+
+.user-area.open .user-menu {
+    display: block;
+}
+
+/* dropdown variant: show below the trigger */
+.user-area .user-menu.dropdown {
+    top: calc(100% + 8px);
+    bottom: auto;
+}
+
+/* dropup variant: show above the trigger (default) */
+.user-area .user-menu.dropup {
+    bottom: calc(100% + 10px);
+    top: auto;
 }
 
 .user-menu li {
@@ -359,37 +348,11 @@ summary::-webkit-details-marker {
     background: #f5f5f5;
 }
 
-.fav-link img {
-    filter: none;
-    /* use a imagem colorida original; altere se quiser icone branco */
-    display: inline-block;
-}
-
-/* Materialize dropdown "dropup" override: render menu above the trigger */
-.dropup-content {
-    /* Materialize positions dropdown via transform; force it above by translating */
-    transform-origin: bottom right !important;
-}
-
-/* When Materialize sets .dropdown-content below, we adjust with JS/CSS by giving a large negative translateY when needed.
-   Using alignments and coverTrigger:false keeps dropdown outside the trigger; this CSS prevents it from being cropped */
-.dropdown-content {
-    z-index: 10050 !important;
-}
-
-.user-name-link {
-    color: #fff;
-    text-decoration: none;
-    padding: 6px 8px;
-    border-radius: 6px;
-}
-
-
 /* Pequena regra responsiva: centralizar menu em telas pequenas */
 @media (max-width: 480px) {
     .user-menu {
         right: 10px;
         left: 10px;
-        top: calc(100% + 8px);
+        bottom: calc(100% + 8px);
     }
 }

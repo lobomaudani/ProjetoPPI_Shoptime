@@ -8,11 +8,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="styles/styles.css" rel="stylesheet">
-    <!-- Materialize CSS and icons (CDN) -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-        <!-- No Materialize: using a small custom dropdown script in includes/header.php -->
-    
+    <!-- Using only custom styles and scripts (no Materialize) -->
     
     <title>ShowTime</title>
     <link rel="icon" href="images/favicon.ico">
