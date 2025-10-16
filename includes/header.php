@@ -13,7 +13,20 @@
     </div>
 
     <div class="user-actions" id="user-actions">    
-
+        <?php include __DIR__ . '/chamarHeader.php'; ?>
     </div>
     
 </header>
+<script>
+// Fecha o <details> do usuário quando clicar fora de forma robusta
+document.addEventListener('click', function (e) {
+    const dropdown = document.querySelector('.user-dropdown');
+    if (!dropdown) return;
+
+    // Se o dropdown estiver aberto e o clique ocorrer fora dele, fecha
+    if (dropdown.open && !dropdown.contains(e.target)) {
+        // Pequeno timeout para evitar conflito com o próprio clique no summary que alterna o estado
+        setTimeout(() => { dropdown.open = false; }, 0);
+    }
+});
+</script>

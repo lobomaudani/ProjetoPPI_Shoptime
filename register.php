@@ -8,8 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // var_dump (password_verify($password, $passwordHash));
     // exit;
 
-    $password = htmlspecialchars(trim($_POST["password"]));
-    $passwordConfirm = htmlspecialchars(trim($_POST["password-confirm"]));
+    $password = htmlspecialchars($_POST["password"]);
+    $passwordConfirm = htmlspecialchars($_POST["password-confirm"]);
 
     if ($password != $passwordConfirm) {
         $error = "As senhas não estão validando entre si!";
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nome = $_POST["username"];
         $cpf = $_POST["cpf"];
         $email = $_POST["email"];        
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        $passwordHash = base64_encode($password);
         // $passwordHash = base64_encode($password);
 
         try {

@@ -366,7 +366,7 @@
         setInterval(showNextSlide, 4000);
     </script>
 
-    <?php include 'includes/chamarHeader.php'; ?>
+    <!-- User area is included by includes/header.php -->
 </body>
 
 </html>

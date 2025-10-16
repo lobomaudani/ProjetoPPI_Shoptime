@@ -1,26 +1,35 @@
-<script>
-    const DIV = document.getElementById('user-actions');
-    <?php 
-    
-    if(!isset($_SESSION['loggedin'])){
-        echo 'DIV.innerHTML = "<div class=\"user-actions-generic\"><div class=\"user-actions-line\"><a href=\"login.php\">Entre</a> ou<br></div><div class=\"user-actions-line\"><a href=\"register.php\" class=\"user-actions-links\">Cadastre-se</a></div></div>";';
+<?php
+// Renderiza a área do usuário diretamente no servidor (mais simples e confiável que injetar via JS)
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
 
-    }else{
-
-        echo 'DIV.innerHTML = "<a href=\"usuario.php\" class=\"user-actions-links\"><ins>'. $_SESSION['nome'] .'</ins></a>
-        <div class="dropdown me-1">
-            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-offset="10,20">
-            Offset
-            </button>
-            <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-            </ul>
-        </div>
-        <img src=\"images/icon-fav.png\" alt=\"Lista de Favoritos\" width=\"30\" height=\"30\"></a>";';
-
-    }
-
+// Saída HTML para a área do usuário
+if (empty($_SESSION['loggedin'])) {
     ?>
-</script>
+    <div class="user-actions-generic">
+        <div class="user-actions-line"><a href="login.php">Entre</a> ou</div>
+        <div class="user-actions-line"><a href="register.php" class="user-actions-links">Cadastre-se</a></div>
+    </div>
+    <?php
+} else {
+    $nome = isset($_SESSION['nome']) ? htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8') : 'Usuário';
+    ?>
+    <div class="user-area">
+        <details class="user-dropdown">
+            <summary><span class="user-name"><?php echo $nome; ?></span> ▾</summary>
+            <ul class="user-menu">
+                <li><a href="usuario.php">Editar Conta</a></li>
+                <li><a href="compras.php">Compras</a></li>
+                <li><a href="logout.php">Sair</a></li>
+            </ul>
+        </details>
+
+        <a href="favoritos.php" class="fav-link" title="Favoritos">
+            <img src="images/icon-fav.png" alt="Lista de Favoritos" width="28" height="28">
+        </a>
+    </div>
+    <?php
+}
+
+?>

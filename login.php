@@ -22,25 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($usuario) {
-                $storedHash = $usuario['senha'];
-
                 // Verifica hash padrão (password_hash) primeiro
-                if (password_verify($password, $storedHash)) {
-                    $passwordOk = true;
-                } else {
-                    // Se a senha no banco estiver em texto plano, permite autenticar e rehash
-                    if ($storedHash === $password) {
-                        $passwordOk = true;
-                        // Re-hash da senha e atualização no banco
-                        $newHash = password_hash($password, PASSWORD_DEFAULT);
-                        $upd = $conexao->prepare("UPDATE usuarios SET senha = :senha WHERE idUsuarios = :id");
-                        $upd->execute([':senha' => $newHash, ':id' => $usuario['idUsuarios']]);
-                    } else {
-                        $passwordOk = false;
-                    }
-                }
+                if (base64_decode($usuario['senha']) == $password) {
 
-                if ($passwordOk) {
                     session_regenerate_id(true);
                     $_SESSION['loggedin'] = true;
                     $_SESSION['email'] = $email;

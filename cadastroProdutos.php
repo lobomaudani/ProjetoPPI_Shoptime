@@ -39,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $exts = [
                     'image/jpeg' => 'jpg',
                     'image/png'  => 'png',
-                    'image/gif'  => 'gif',
                     'image/webp' => 'webp',
                     'video/mp4'  => 'mp4',
                     'video/webm' => 'webm',
@@ -65,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tmp = $files['tmp_name'][$i];
                     $mime = $finfo->file($tmp) ?: '';
                     if (!array_key_exists($mime, $exts)) {
-                        $mensagem_status = 'Tipo de arquivo não suportado. Use imagens (JPG/PNG/GIF/WEBP) ou vídeos (MP4/WebM/OGG/MOV).';
+                        $mensagem_status = 'Tipo de arquivo não suportado. Use imagens (JPG/PNG/WEBP) ou vídeos (MP4/WebM/OGG/MOV).';
                         $tipo_mensagem = 'danger';
                         break;
                     }
