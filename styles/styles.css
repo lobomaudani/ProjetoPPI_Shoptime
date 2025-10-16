@@ -365,6 +365,26 @@ summary::-webkit-details-marker {
     display: inline-block;
 }
 
+/* Materialize dropdown "dropup" override: render menu above the trigger */
+.dropup-content {
+    /* Materialize positions dropdown via transform; force it above by translating */
+    transform-origin: bottom right !important;
+}
+
+/* When Materialize sets .dropdown-content below, we adjust with JS/CSS by giving a large negative translateY when needed.
+   Using alignments and coverTrigger:false keeps dropdown outside the trigger; this CSS prevents it from being cropped */
+.dropdown-content {
+    z-index: 10050 !important;
+}
+
+.user-name-link {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+
 /* Pequena regra responsiva: centralizar menu em telas pequenas */
 @media (max-width: 480px) {
     .user-menu {

@@ -16,14 +16,18 @@ if (empty($_SESSION['loggedin'])) {
     $nome = isset($_SESSION['nome']) ? htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8') : 'Usuário';
     ?>
     <div class="user-area">
-        <details class="user-dropdown">
-            <summary><span class="user-name"><?php echo $nome; ?></span> ▾</summary>
-            <ul class="user-menu">
-                <li><a href="usuario.php">Editar Conta</a></li>
-                <li><a href="compras.php">Compras</a></li>
-                <li><a href="logout.php">Sair</a></li>
-            </ul>
-        </details>
+        <!-- User name trigger (custom, no Materialize dependency) -->
+        <a class="user-name-link" href="#" aria-haspopup="true" aria-expanded="false" id="user-name-trigger">
+            <?php echo $nome; ?> ▴
+        </a>
+
+        <!-- Menu (custom dropup) -->
+        <ul id="user-dropdown" class="user-menu" role="menu" aria-labelledby="user-name-trigger">
+            <li role="none"><a role="menuitem" href="usuario.php">Conta</a></li>
+            <li role="none"><a role="menuitem" href="compras.php">Compras</a></li>
+            <li role="separator" class="divider" aria-hidden="true"></li>
+            <li role="none"><a role="menuitem" href="logout.php">Sair</a></li>
+        </ul>
 
         <a href="favoritos.php" class="fav-link" title="Favoritos">
             <img src="images/icon-fav.png" alt="Lista de Favoritos" width="28" height="28">

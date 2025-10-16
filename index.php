@@ -8,6 +8,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="styles/styles.css" rel="stylesheet">
+    <!-- Materialize CSS and icons (CDN) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
     <title>ShowTime</title>
     <link rel="icon" href="images/favicon.ico">
     <style>
@@ -367,6 +370,21 @@
     </script>
 
     <!-- User area is included by includes/header.php -->
+    <!-- Materialize JS (placed before the closing body to ensure DOM is loaded) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var elems = document.querySelectorAll('.dropdown-trigger');
+            M.Dropdown.init(elems, {
+                coverTrigger: false,
+                constrainWidth: false,
+                hover: false,
+                closeOnClick: true,
+                inDuration: 150,
+                outDuration: 100
+            });
+        });
+    </script>
 </body>
 
 </html>

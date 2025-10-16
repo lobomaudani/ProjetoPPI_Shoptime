@@ -6,29 +6,28 @@ $mensagem_status    = '';
 $tipo_mensagem      = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $emailRaw   = isset($_POST['email']) ? trim($_POST['email']) : '';
-    $password   = isset($_POST['password']) ? trim($_POST['password']) : '';
+    $password   = $_POST['password'];
+    $email = $_POST['email'];
 
-    // Validação básica do email
-    $email = filter_var($emailRaw, FILTER_VALIDATE_EMAIL);
     if (!$email) {
         $error = 'Email inválido.';
     } elseif ($password === '') {
         $error = 'Senha não pode ser vazia.';
     } else {
         try {
-            $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha FROM usuarios WHERE email = :email");
+            $stmt = $conexao->prepare("SELECT idUsuarios, email, nome, senha, Cargos_idCargos FROM usuarios WHERE email = :email");
             $stmt->execute([':email' => $email]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($usuario) {
+            if ($password == $usuario['senha']) {
                 // Verifica hash padrão (password_hash) primeiro
-                if (base64_decode($usuario['senha']) == $password) {
+                if ($usuario['senha'] == $password) {
 
                     session_regenerate_id(true);
                     $_SESSION['loggedin'] = true;
                     $_SESSION['email'] = $email;
                     $_SESSION['nome'] = $usuario['nome'];
+                    $_SESSION['cargo'] = $usuario['Cargos_idCargos'];
 
                     if (isset($_POST['rememberme'])) {
                         $cookie_name    = 'user_login';
