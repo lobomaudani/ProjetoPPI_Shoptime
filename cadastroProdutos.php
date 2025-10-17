@@ -9,7 +9,8 @@ $imagensSalvas = []; // informações dos arquivos salvos
 // Buscar categorias do banco (fallback para array vazio)
 $categorias = [];
 try {
-    $stmt = $conexao->query("SELECT id, nome FROM categorias ORDER BY nome ASC");
+    // usar os nomes reais das colunas: idCategorias e Nome
+    $stmt = $conexao->query("SELECT idCategorias AS id, Nome AS nome FROM categorias ORDER BY Nome ASC");
     if ($stmt) {
         $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -219,10 +220,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-6">
                                 <label class="form-label">Categoria <span class="text-danger">*</span></label>
                                 <select name="categoria" id="categoria" class="form-select" required>
-                                    <option value="">Selecione Categoria</option>
-                                    <?php foreach ($categorias as $cat): ?>
-                                        <option value="<?php echo htmlspecialchars($cat['id']); ?>"><?php echo htmlspecialchars($cat['nome']); ?></option>
-                                    <?php endforeach; ?>
+                                    <?php if (empty($categorias)): ?>
+                                        <option value="">Sem categorias</option>
+                                    <?php else: ?>
+                                        <?php foreach ($categorias as $cat): ?>
+                                            <option value="<?php echo htmlspecialchars($cat['id']); ?>"><?php echo htmlspecialchars($cat['nome']); ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                             </div>
                             <div class="col-md-6">
