@@ -19,15 +19,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([':email' => $email]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($password == $usuario['senha']) {
-                // Verifica hash padrão (password_hash) primeiro
-                if ($usuario['senha'] == $password) {
+            if (!$usuario) {
+                $error = 'Usuário ou senha inválidos.';
+            } else {
+                $hash = $usuario['senha'];
+                $isValid = false;
 
+                // Se a senha estiver salva como hash, use password_verify
+                if (password_verify($password, $hash)) {
+                    $isValid = true;
+                } else {
+                    // Fallback: alguns registros antigos podem ter senha em texto puro.
+                    // Se for igual, aceitar login e migrar para hash seguro.
+                    if ($password === $hash) {
+                        $isValid = true;
+                        // re-hash e atualiza no banco para migrar para senha segura
+                        try {
+                            $newHash = password_hash($password, PASSWORD_DEFAULT);
+                            $upd = $conexao->prepare("UPDATE usuarios SET senha = :senha WHERE idUsuarios = :id");
+                            $upd->execute([':senha' => $newHash, ':id' => $usuario['idUsuarios']]);
+                        } catch (Exception $e) {
+                            // se falhar, não bloqueia o login; apenas não atualiza
+                        }
+                    }
+                }
+
+                if ($isValid) {
                     session_regenerate_id(true);
                     $_SESSION['loggedin'] = true;
                     $_SESSION['email'] = $email;
-                    $_SESSION['nome'] = $usuario['nome'];
                     $_SESSION['cargo'] = $usuario['Cargos_idCargos'];
+                    $_SESSION['id'] = $usuario['idUsuarios'];
 
                     if (isset($_POST['rememberme'])) {
                         $cookie_name    = 'user_login';
@@ -49,8 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $error = 'Usuário ou senha inválidos.';
                 }
-            } else {
-                $error = 'Usuário ou senha inválidos.';
             }
 
         } catch (PDOException $e) {

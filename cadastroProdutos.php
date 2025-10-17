@@ -6,6 +6,19 @@ $mensagem_status = '';
 $tipo_mensagem   = '';
 $imagensSalvas = []; // informações dos arquivos salvos
 
+// Buscar categorias do banco (fallback para array vazio)
+$categorias = [];
+try {
+    // usar os nomes reais das colunas: idCategorias e Nome
+    $stmt = $conexao->query("SELECT idCategorias AS id, Nome AS nome FROM categorias ORDER BY Nome ASC");
+    if ($stmt) {
+        $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    // tabela categorias pode não existir; seguir com array vazio
+    $categorias = [];
+}
+
 // Processamento do POST (mesmo arquivo)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -14,10 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descricao = htmlspecialchars(trim($_POST["descricao"] ?? ''));
     $preco     = htmlspecialchars(trim($_POST["preco"] ?? ''));
     $unidades  = htmlspecialchars(trim($_POST["unidades"] ?? ''));
+    $categoria = htmlspecialchars(trim($_POST["categoria"] ?? ''));
+    $marca     = htmlspecialchars(trim($_POST["marca"] ?? ''));
 
     // Validações simples
     if (!$nome || !$descricao || $preco === '' || $unidades === '') {
         $mensagem_status = 'Por favor, preencha os campos obrigatórios corretamente.';
+        $tipo_mensagem = 'danger';
+    } elseif (!$categoria) {
+        // categoria é obrigatória
+        $mensagem_status = 'Por favor, selecione uma categoria para o produto.';
         $tipo_mensagem = 'danger';
     } else {
         // Upload de múltiplos arquivos (até 10)
@@ -94,12 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $imagensJson = !empty($imagensSalvas) ? json_encode($imagensSalvas, JSON_UNESCAPED_SLASHES) : null;
 
             // Exemplo de insert usando PDO (ajuste conforme seu conectarBD.php)
-            /*
-            $pdo = conectar(); // sua função de conexão
             $sql = "INSERT INTO produtos (nome, descricao, preco, unidades, imagens) VALUES (?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$nome, $descricao, $preco, $unidades, $imagensJson]);
-            */
+            
 
             $mensagem_status = 'Produto cadastrado com sucesso!';
             $tipo_mensagem = 'success';
@@ -171,23 +188,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <form action="" method="POST" enctype="multipart/form-data" id="produtoForm" novalidate>
                         <div class="mb-3">
-                            <label class="form-label">Nome do Produto</label>
-                            <input class="form-control" type="text" name="nome" required>
+                            <label class="form-label">Nome do Produto <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="nome" required placeholder="Digite o nome do produto">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Descrição</label>
-                            <textarea class="form-control" name="descricao" rows="4" required></textarea>
+                            <label class="form-label">Descrição <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="descricao" rows="4" required placeholder="Esse produto contém..."></textarea>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Preço</label>
-                                <input class="form-control" type="number" step="0.01" name="preco" required>
+                                <label class="form-label">Preço <span class="text-danger">*</span></label>
+                                <input class="form-control" type="number" step="0.01" name="preco" required placeholder="Digite o preço do produto">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Unidades em estoque</label>
-                                <input class="form-control" type="number" name="unidades" value="1" min="1" required>
+                                <input class="form-control" type="number" name="unidades" value="1" min="1" required placeholder="Digite a quantidade no estoque">
                             </div>
                         </div>
 
@@ -196,6 +213,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label">Imagens / Vídeos (até 10 arquivos)</label>
                                 <input class="form-control" type="file" name="imagens[]" id="imagensInput" accept="image/*,video/*" multiple>
                                 <div class="form-text">PNG, JPG, GIF, WEBP, MP4, WebM, OGG, MOV — até 5MB por arquivo</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                                <select name="categoria" id="categoria" class="form-select" required>
+                                    <?php if (empty($categorias)): ?>
+                                        <option value="">Sem categorias</option>
+                                    <?php else: ?>
+                                        <?php foreach ($categorias as $cat): ?>
+                                            <option value="<?php echo htmlspecialchars($cat['id']); ?>"><?php echo htmlspecialchars($cat['nome']); ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Marca</label>
+                                <input class="form-control" type="text" name="marca" id="marca" placeholder="Selecione Marca">
                             </div>
                         </div>
 
@@ -285,11 +321,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const descricao = form.descricao.value.trim();
                     const preco = form.preco.value;
                     const unidades = form.unidades.value;
+                    const categoria = (form.categoria ? form.categoria.value : '');
+                    const marcaInput = (form.marca ? form.marca : null);
                     if (!nome || !descricao || preco === '' || unidades === '') {
                         e.preventDefault();
                         alert('Preencha os campos obrigatórios antes de enviar.');
                         return;
                     }
+
+                    if (!categoria) {
+                        e.preventDefault();
+                        alert('Por favor selecione uma categoria para o produto.');
+                        return;
+                    }
+
+                    // Se o campo marca estiver vazio, deixamos o placeholder visível — nada adicional a fazer.
                     const files = document.getElementById('imagensInput').files;
                     if (files.length > MAX_FILES) {
                         e.preventDefault();
