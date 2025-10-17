@@ -13,12 +13,26 @@ if (empty($_SESSION['loggedin'])) {
     </div>
     <?php
 } else {
-    $nome = isset($_SESSION['nome']) ? htmlspecialchars($_SESSION['nome'], ENT_QUOTES, 'UTF-8') : 'Usuário';
+    // Buscar nome do usuário pelo id armazenado na sessão (mantemos apenas id na sessão)
+    $nome = 'Usuário';
+    if (!empty($_SESSION['id'])) {
+        try {
+            include_once __DIR__ . '/../connections/conectarBD.php';
+            $stmt = $conexao->prepare('SELECT nome FROM usuarios WHERE idUsuarios = :id LIMIT 1');
+            $stmt->execute([':id' => $_SESSION['id']]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row && !empty($row['nome'])) {
+                $nome = htmlspecialchars($row['nome'], ENT_QUOTES, 'UTF-8');
+            }
+        } catch (Exception $e) {
+            // se falhar, mantemos o fallback 'Usuário'
+        }
+    }
     ?>
     <div class="user-area">
         <!-- User name trigger (custom, no Materialize dependency) -->
         <a class="user-name-link" href="#" aria-haspopup="true" aria-expanded="false" id="user-name-trigger">
-            <?php echo $nome; ?> ▴
+            ▾ <?php echo $nome; ?> 
         </a>
 
         <!-- Menu (custom dropup) -->

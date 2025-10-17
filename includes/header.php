@@ -1,19 +1,21 @@
 <header>
-    <?php include 'logo.inc'; ?>
+    <div class="header-inner">
+        <?php include 'logo.inc'; ?>
 
-    <div class="search-bar" style="margin: 10px 10px;">
-        <form action="pesquisaProdutos.php" method="GET" class="d-flex" role="search">
-            <input class="form-control me-2" type="search" name="q" 
-                   placeholder="Buscar produtos..." 
-                   aria-label="Buscar produtos" 
-                   required
-                   style="width: 300px; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;">
-            <button class="btn btn-outline-success" type="submit" style="padding: 6px 12px; border-radius: 4px;">Pesquisar</button>
-        </form>
-    </div>
+        <div class="search-bar" style="margin: 10px 10px;">
+            <form action="pesquisaProdutos.php" method="GET" class="d-flex" role="search">
+                <input class="form-control me-2" type="search" name="q" 
+                       placeholder="Buscar produtos..." 
+                       aria-label="Buscar produtos" 
+                       required
+                       style="width: 300px; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;">
+                <button class="btn btn-outline-success" type="submit" style="padding: 6px 12px; border-radius: 4px;">Pesquisar</button>
+            </form>
+        </div>
 
-    <div class="user-actions" id="user-actions">
-        <?php include __DIR__ . '/chamarHeader.php'; ?>
+        <div class="user-actions" id="user-actions">
+            <?php include __DIR__ . '/chamarHeader.php'; ?>
+        </div>
     </div>
     
 </header>
@@ -34,8 +36,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function openMenu() {
         // decide whether to show above or below depending on viewport space
         menu.classList.remove('dropup', 'dropdown');
+
+        // measure menu height while keeping it hidden but rendered
+        menu.classList.add('measuring');
+        const menuHeight = menu.offsetHeight || menu.scrollHeight || 150;
+        menu.classList.remove('measuring');
+
         const rect = userArea.getBoundingClientRect();
-        const menuHeight = menu.offsetHeight || 150; // fallback
         const spaceAbove = rect.top; // px above the trigger
         const spaceBelow = window.innerHeight - rect.bottom; // px below the trigger
         if (spaceAbove > menuHeight + 20) {
@@ -53,14 +60,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (userArea.classList.contains('open')) closeMenu(); else openMenu();
     });
 
-    // Close when clicking outside
-    document.addEventListener('click', function (e) {
+    // Close when clicking outside (capture phase to be robust)
+    function onOutsideClick(e) {
         if (!userArea.classList.contains('open')) return;
         if (!userArea.contains(e.target)) closeMenu();
-    });
+    }
+    document.addEventListener('mousedown', onOutsideClick, true);
+    document.addEventListener('touchstart', onOutsideClick, true);
 
     // Prevent clicks inside the menu from bubbling to document
     menu.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    // Close on window resize or scroll (menu position may be invalid)
+    window.addEventListener('resize', function () { if (userArea.classList.contains('open')) closeMenu(); });
+    window.addEventListener('scroll', function () { if (userArea.classList.contains('open')) closeMenu(); }, true);
 
     // Close on Escape
     document.addEventListener('keydown', function (e) {

@@ -21,11 +21,19 @@ body {
 header {
     background: #ff4553;
     padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     color: #fff;
     border-bottom: 1px solid #ad4048;
+}
+
+/* Inner wrapper: center the logo, search and actions as a group */
+.header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* center the group horizontally */
+    gap: 20px;
 }
 
 header .logo {
@@ -34,9 +42,11 @@ header .logo {
 }
 
 header .search-bar {
-    flex: 1;
+    flex: 1 1 480px;
+    /* allow shrinking on small screens */
     margin: 0 20px;
     display: flex;
+    justify-content: center;
 }
 
 header .search-bar input {
@@ -105,6 +115,18 @@ header .search-bar button {
     gap: 10px;
     color: #fff;
     min-width: 220px;
+}
+
+/* Ensure links in the unauthenticated block are white and readable */
+.user-actions-generic,
+.user-actions-generic a,
+.user-actions-line a {
+    color: #fff !important;
+}
+
+/* Slightly de-emphasize the 'ou' text but keep it white */
+.user-actions-line {
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .user-actions-links {
@@ -296,6 +318,15 @@ textarea.form-control {
     cursor: pointer;
 }
 
+/* Make sure auth links have hover focus styles that remain readable */
+.user-actions-generic a:hover,
+.user-actions-generic a:focus,
+.user-actions-links:hover,
+.user-actions-links:focus {
+    text-decoration: underline;
+    color: #fff !important;
+}
+
 .fav-link img {
     filter: none;
     display: inline-block;
@@ -316,6 +347,15 @@ textarea.form-control {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     list-style: none;
     z-index: 10000;
+}
+
+/* when measuring, render off-screen but invisible so offsetHeight works */
+.user-area .user-menu.measuring {
+    display: block !important;
+    visibility: hidden;
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
 }
 
 .user-area.open .user-menu {
@@ -354,5 +394,21 @@ textarea.form-control {
         right: 10px;
         left: 10px;
         bottom: calc(100% + 8px);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-inner {
+        padding: 0 10px;
+        gap: 10px;
+    }
+
+    .search-bar {
+        flex: 1 1 220px;
+    }
+
+    .header-inner img {
+        max-width: 140px;
+        height: auto;
     }
 }
