@@ -208,14 +208,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
 
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-12">
-                                <label class="form-label">Imagens / Vídeos (até 10 arquivos)</label>
-                                <input class="form-control" type="file" name="imagens[]" id="imagensInput" accept="image/*,video/*" multiple>
-                                <div class="form-text">PNG, JPG, GIF, WEBP, MP4, WebM, OGG, MOV — até 5MB por arquivo</div>
-                            </div>
-                        </div>
-
                         <div class="row g-3 mt-3">
                             <div class="col-md-6">
                                 <label class="form-label">Categoria <span class="text-danger">*</span></label>
@@ -232,6 +224,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-6">
                                 <label class="form-label">Marca</label>
                                 <input class="form-control" type="text" name="marca" id="marca" placeholder="Selecione Marca">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-12">
+                                <label class="form-label">Imagens / Vídeos (até 10 arquivos)</label>
+                                <input class="form-control" type="file" name="imagens[]" id="imagensInput" accept="image/*,video/*" multiple>
+                                <div class="form-text">PNG, JPG, GIF, WEBP, MP4, WebM, OGG, MOV — até 5MB por arquivo</div>
                             </div>
                         </div>
 
