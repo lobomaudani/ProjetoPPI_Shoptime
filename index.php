@@ -1,5 +1,5 @@
-<?php 
-    session_start();
+<?php
+session_start();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -9,36 +9,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="styles/styles.css" rel="stylesheet">
     <!-- Using only custom styles and scripts (no Materialize) -->
-    
+
     <title>ShowTime</title>
     <link rel="icon" href="images/favicon.ico">
     <style>
-       
-        .search-bar input {
-            width: 300px;
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .nav-categories button,
-        .nav-categories select {
-            margin-left: 30px;
-            padding: 6px 12px;
-            border: none;
-            background: #c1121f;
-            color: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        nav.nav-categories {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            background: #fc606c;
-        }
-
         .carousel {
             position: relative;
             overflow: hidden;
@@ -218,44 +192,53 @@
 
         /* Ocultar o pop-up por padrão */
         .popup {
-        display: none; /* Oculto por padrão */
-        position: fixed; /* Posicionamento fixo */
-        z-index: 1; /* Fica por cima de outros elementos */
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto; /* Permite rolagem se o conteúdo for grande */
-        background-color: rgba(0,0,0,0.5); /* Cor de fundo semitransparente */
+            display: none;
+            /* Oculto por padrão */
+            position: fixed;
+            /* Posicionamento fixo */
+            z-index: 1;
+            /* Fica por cima de outros elementos */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            /* Permite rolagem se o conteúdo for grande */
+            background-color: rgba(0, 0, 0, 0.5);
+            /* Cor de fundo semitransparente */
         }
 
         .popup-content {
-        background-color: #fefefe;
-        margin: 15% auto; /* Centraliza o pop-up */
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%; /* Largura do conteúdo */
-        max-width: 500px; /* Largura máxima */
-        position: relative;
+            background-color: #fefefe;
+            margin: 15% auto;
+            /* Centraliza o pop-up */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            /* Largura do conteúdo */
+            max-width: 500px;
+            /* Largura máxima */
+            position: relative;
         }
 
         .close-btn {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .close-btn:hover,
         .close-btn:focus {
-        color: black;
-        text-decoration: none;
+            color: black;
+            text-decoration: none;
         }
 
         /* Estilos para quando o pop-up é ativado */
         .popup.active {
-        display: block; /* Torna o pop-up visível */
+            display: block;
+            /* Torna o pop-up visível */
         }
     </style>
 </head>
@@ -349,7 +332,7 @@
             </div>
             <!-- Duplicar .product-card conforme necessário para novos itens -->
         </div>
-    </section>    
+    </section>
 
     <script>
         // Função de filtro de categorias (lookup)
@@ -369,7 +352,7 @@
     </script>
 
     <!-- User area is included by includes/header.php -->
-        <!-- No Materialize: using a small custom dropdown script in includes/header.php -->
+    <!-- No Materialize: using a small custom dropdown script in includes/header.php -->
 </body>
 
 </html>

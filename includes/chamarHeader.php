@@ -32,13 +32,14 @@ if (empty($_SESSION['loggedin'])) {
     <div class="user-area">
         <!-- User name trigger (custom, no Materialize dependency) -->
         <a class="user-name-link" href="#" aria-haspopup="true" aria-expanded="false" id="user-name-trigger">
-            ▾ <?php echo $nome; ?> 
+            ▾ <?php echo $nome; ?>
         </a>
 
         <!-- Menu (custom dropup) -->
         <ul id="user-dropdown" class="user-menu" role="menu" aria-labelledby="user-name-trigger">
             <li role="none"><a role="menuitem" href="usuario.php">Conta</a></li>
             <li role="none"><a role="menuitem" href="compras.php">Compras</a></li>
+            <li role="none"><a role="menuitem" href="usuarioProdutos.php">Meus Produtos</a></li>
             <li role="separator" class="divider" aria-hidden="true"></li>
             <li role="none"><a role="menuitem" href="logout.php">Sair</a></li>
         </ul>
