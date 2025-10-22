@@ -55,12 +55,16 @@ $countStmt = $conexao->prepare('SELECT COUNT(*) FROM produtos WHERE Usuarios_idU
 $countStmt->execute([':uid' => $userId]);
 $total = (int) $countStmt->fetchColumn();
 
-$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, p.Quantidade, e.ImagemUrl
+$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, p.Quantidade, e.idEnderecoimagem AS imagem_id, e.ImagemUrl
      FROM produtos p
      LEFT JOIN (
-          SELECT Produtos_idProdutos, MIN(ImagemUrl) AS ImagemUrl
-          FROM enderecoimagem
-          GROUP BY Produtos_idProdutos
+          SELECT idEnderecoimagem, Produtos_idProdutos, ImagemUrl
+          FROM enderecoimagem e1
+          WHERE e1.idEnderecoimagem = (
+               SELECT MIN(e2.idEnderecoimagem)
+               FROM enderecoimagem e2
+               WHERE e2.Produtos_idProdutos = e1.Produtos_idProdutos
+          )
      ) e ON e.Produtos_idProdutos = p.idProdutos
      WHERE p.Usuarios_idUsuarios = :uid
      ORDER BY p.idProdutos DESC
@@ -70,6 +74,9 @@ $stmt->bindValue(':lim', $perPage, PDO::PARAM_INT);
 $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Debug: mostrar os dados dos produtos
+error_log("Produtos encontrados: " . print_r($produtos, true));
 
 function e($s)
 {
@@ -111,8 +118,8 @@ function e($s)
             <?php foreach ($produtos as $p): ?>
                 <div class="col-md-3 mb-4">
                     <div class="card h-100">
-                        <?php if (!empty($p['ImagemUrl'])): ?>
-                            <img src="<?php echo e($p['ImagemUrl']); ?>" class="card-img-top"
+                        <?php if (!empty($p['imagem_id'])): ?>
+                            <img src="serve_imagem.php?id=<?php echo (int) $p['imagem_id']; ?>" class="card-img-top"
                                 style="height:160px;object-fit:cover;" alt="">
                         <?php else: ?>
                             <div

@@ -19,6 +19,10 @@ try {
 try {
     // adicionar coluna FavoritosCount em produtos (MySQL 8+ permite IF NOT EXISTS)
     $conexao->exec("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS FavoritosCount INT NOT NULL DEFAULT 0");
+
+    // Adicionar colunas para BLOB em enderecoimagem
+    $conexao->exec("ALTER TABLE enderecoimagem ADD COLUMN IF NOT EXISTS ImagemBlob LONGBLOB DEFAULT NULL");
+    $conexao->exec("ALTER TABLE enderecoimagem ADD COLUMN IF NOT EXISTS MimeType VARCHAR(255) DEFAULT NULL");
 } catch (Exception $e) {
     // ignora
 }

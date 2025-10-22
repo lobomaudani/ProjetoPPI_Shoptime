@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mensagem_status = 'Por favor, selecione uma categoria para o produto.';
         $tipo_mensagem = 'danger';
     } else {
-        // uploads
+        // uploads (apenas imagens) - não gravar arquivos no disco, armazenar LOB
         if (isset($_FILES['imagens'])) {
             $files = $_FILES['imagens'];
             $countFiles = 0;
@@ -43,41 +43,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensagem_status = 'Você pode enviar no máximo 10 arquivos.';
                 $tipo_mensagem = 'danger';
             } else {
-                $uploadsDir = __DIR__ . '/uploads/';
-                if (!is_dir($uploadsDir))
-                    mkdir($uploadsDir, 0777, true);
                 $maxSizePerFile = 5 * 1024 * 1024;
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $exts = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/ogg' => 'ogv', 'video/quicktime' => 'mov'];
+                $exts = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
                 for ($i = 0; $i < count($files['name']); $i++) {
                     if ($files['name'][$i] === '')
                         continue;
                     if ($files['error'][$i] !== UPLOAD_ERR_OK) {
-                        $mensagem_status = 'Erro no upload.';
+                        $mensagem_status = 'Erro no upload de uma das imagens.';
                         $tipo_mensagem = 'danger';
                         break;
                     }
                     if ($files['size'][$i] > $maxSizePerFile) {
-                        $mensagem_status = 'Um dos arquivos excede o limite de 5MB.';
+                        $mensagem_status = 'Uma das imagens excede o limite de 5MB.';
                         $tipo_mensagem = 'danger';
                         break;
                     }
                     $tmp = $files['tmp_name'][$i];
                     $mime = $finfo->file($tmp) ?: '';
                     if (!array_key_exists($mime, $exts)) {
-                        $mensagem_status = 'Tipo de arquivo não suportado.';
+                        $mensagem_status = 'Tipo de arquivo não suportado (apenas imagens).';
                         $tipo_mensagem = 'danger';
                         break;
                     }
-                    $base = bin2hex(random_bytes(8)) . '_' . time() . '_' . $i;
-                    $filename = $base . '.' . $exts[$mime];
-                    $dest = $uploadsDir . $filename;
-                    if (!move_uploaded_file($tmp, $dest)) {
-                        $mensagem_status = 'Erro ao mover arquivo.';
+                    // ler conteúdo binário e guardar para inserir como LOB
+                    $data = file_get_contents($tmp);
+                    if ($data === false) {
+                        $mensagem_status = 'Erro ao ler arquivo de imagem.';
                         $tipo_mensagem = 'danger';
                         break;
                     }
-                    $imagensSalvas[] = ['path' => 'uploads/' . $filename, 'mime' => $mime];
+                    $imagensSalvas[] = ['data' => $data, 'mime' => $mime];
                 }
             }
         }
@@ -94,16 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ins = $conexao->prepare($sql);
                     $ins->execute([':uid' => $userId, ':nome' => $nome, ':preco' => ($preco === '' ? null : $preco), ':quantidade' => ($unidades === '' ? null : (int) $unidades), ':avaliacao' => null, ':categoria' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca)]);
                     $prodId = $conexao->lastInsertId();
+                    // exigir pelo menos uma imagem
+                    if (empty($imagensSalvas)) {
+                        throw new Exception('Envie ao menos uma imagem para o produto.');
+                    }
                     if (!empty($imagensSalvas)) {
                         $insImg = $conexao->prepare("INSERT INTO enderecoimagem (ImagemUrl, Produtos_idProdutos) VALUES (:img, :pid)");
                         foreach ($imagensSalvas as $f) {
-                            $filePath = __DIR__ . '/' . $f['path'];
-                            if (is_file($filePath)) {
-                                $data = file_get_contents($filePath);
-                                $insImg->bindValue(':img', $data, PDO::PARAM_LOB);
-                                $insImg->bindValue(':pid', $prodId, PDO::PARAM_INT);
-                                $insImg->execute();
-                            }
+                            $insImg->bindValue(':img', $f['data'], PDO::PARAM_LOB);
+                            $insImg->bindValue(':pid', $prodId, PDO::PARAM_INT);
+                            $insImg->execute();
                         }
                     }
                     $conexao->commit();
@@ -241,10 +237,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="row g-3 mt-2">
                                 <div class="col-md-12">
-                                    <label class="form-label">Imagens / Vídeos (até 10 arquivos)</label>
+                                    <label class="form-label">Imagens (até 10 arquivos)</label>
                                     <input class="form-control" type="file" name="imagens[]" id="imagensInput"
-                                        accept="image/*,video/*" multiple>
-                                    <div class="form-text">PNG, JPG, GIF, WEBP, MP4, WebM, OGG, MOV — até 5MB por arquivo
+                                        accept="image/*" multiple>
+                                    <div class="form-text">PNG, JPG, GIF, WEBP — até 5MB por imagem
                                     </div>
                                 </div>
                             </div>
@@ -268,10 +264,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const previewGrid = document.getElementById('previewGrid');
             const form = document.getElementById('produtoForm');
             const MAX_FILES = 10; const MAX_SIZE = 5 * 1024 * 1024;
-            function clearPreview() { previewGrid.innerHTML = ''; }
-            function addPreview(file, url) { const item = document.createElement('div'); item.className = 'preview-item'; const isImage = file.type.startsWith('image/'); if (isImage) { const img = document.createElement('img'); img.src = url; img.className = 'thumb'; item.appendChild(img); } else { const vid = document.createElement('video'); vid.src = url; vid.className = 'thumb'; vid.controls = true; vid.preload = 'metadata'; item.appendChild(vid); } const label = document.createElement('div'); label.textContent = file.name; item.appendChild(label); previewGrid.appendChild(item); }
-            if (input) { input.addEventListener('change', function (e) { clearPreview(); const files = Array.from(e.target.files || []); if (files.length > MAX_FILES) { alert('Selecione no máximo ' + MAX_FILES + ' arquivos.'); input.value = ''; return; } for (const file of files) { if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) { alert('Arquivo não suportado: ' + file.name); input.value = ''; clearPreview(); return; } if (file.size > MAX_SIZE) { alert('Arquivo muito grande (limite 5MB): ' + file.name); input.value = ''; clearPreview(); return; } const url = URL.createObjectURL(file); addPreview(file, url); } }); }
-            if (form) { form.addEventListener('submit', function (e) { const nome = form.nome.value.trim(); const descricao = form.descricao.value.trim(); const preco = form.preco.value; const unidades = form.unidades.value; const categoria = (form.categoria ? form.categoria.value : ''); if (!nome || !descricao || preco === '' || unidades === '') { e.preventDefault(); alert('Preencha os campos obrigatórios antes de enviar.'); return; } if (!categoria) { e.preventDefault(); alert('Por favor selecione uma categoria para o produto.'); return; } const files = document.getElementById('imagensInput').files; if (files.length > MAX_FILES) { e.preventDefault(); alert('Selecione no máximo ' + MAX_FILES + ' arquivos.'); } }); }
+            // DataTransfer-based incremental selection
+            const dt = new DataTransfer();
+
+            function renderPreviews() {
+                previewGrid.innerHTML = '';
+                for (let i = 0; i < dt.files.length; i++) {
+                    const file = dt.files[i];
+                    const item = document.createElement('div'); item.className = 'preview-item';
+                    const img = document.createElement('img'); img.className = 'thumb'; img.src = URL.createObjectURL(file);
+                    item.appendChild(img);
+                    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-sm btn-outline-danger'; btn.textContent = '✕';
+                    btn.style.display = 'block'; btn.style.margin = '6px auto 0';
+                    btn.addEventListener('click', function () { removeFileAt(i); });
+                    item.appendChild(btn);
+                    previewGrid.appendChild(item);
+                }
+                // update real input files
+                input.files = dt.files;
+            }
+
+            function removeFileAt(index) {
+                const tmp = new DataTransfer();
+                for (let i = 0; i < dt.files.length; i++) if (i !== index) tmp.items.add(dt.files[i]);
+                while (dt.files.length > 0) dt.items.remove(0);
+                for (let i = 0; i < tmp.files.length; i++) dt.items.add(tmp.files[i]);
+                renderPreviews();
+            }
+
+            if (input) {
+                input.addEventListener('change', function (e) {
+                    const files = Array.from(e.target.files || []);
+                    if (dt.files.length + files.length > MAX_FILES) { alert('Selecione no máximo ' + MAX_FILES + ' imagens.'); input.value = ''; return; }
+                    for (const f of files) {
+                        if (!f.type.startsWith('image/')) { alert('Apenas imagens são permitidas: ' + f.name); continue; }
+                        if (f.size > MAX_SIZE) { alert('Imagem muito grande (max 5MB): ' + f.name); continue; }
+                        dt.items.add(f);
+                    }
+                    renderPreviews();
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    const nome = form.nome.value.trim(); const descricao = form.descricao.value.trim(); const preco = form.preco.value; const unidades = form.unidades.value; const categoria = (form.categoria ? form.categoria.value : '');
+                    if (!nome || !descricao || preco === '' || unidades === '') { e.preventDefault(); alert('Preencha os campos obrigatórios antes de enviar.'); return; }
+                    if (!categoria) { e.preventDefault(); alert('Por favor selecione uma categoria para o produto.'); return; }
+                    if (dt.files.length === 0) { e.preventDefault(); alert('Envie ao menos uma imagem para o produto.'); return; }
+                });
+            }
         })();
     </script>
 </body>

@@ -17,13 +17,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['unfav_id'])) {
     exit;
 }
 
-$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, e.ImagemUrl, u.Nome AS Vendedor
+$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, e.idEnderecoimagem AS imagem_id, u.Nome AS Vendedor
     FROM favoritos f
     JOIN produtos p ON p.idProdutos = f.Produtos_idProdutos
     LEFT JOIN (
-        SELECT Produtos_idProdutos, MIN(ImagemUrl) AS ImagemUrl
-        FROM enderecoimagem
-        GROUP BY Produtos_idProdutos
+        SELECT idEnderecoimagem, Produtos_idProdutos
+        FROM enderecoimagem e1
+        WHERE e1.idEnderecoimagem = (
+            SELECT MIN(e2.idEnderecoimagem)
+            FROM enderecoimagem e2
+            WHERE e2.Produtos_idProdutos = e1.Produtos_idProdutos
+        )
     ) e ON e.Produtos_idProdutos = p.idProdutos
     JOIN usuarios u ON u.idUsuarios = p.Usuarios_idUsuarios
     WHERE f.Usuarios_idUsuarios = :uid
@@ -60,8 +64,8 @@ function e($s)
                     <div class="list-group-item mb-2 position-relative p-3 d-flex align-items-start">
                         <a href="produto.php?id=<?php echo $it['idProdutos']; ?>"
                             class="d-flex align-items-center text-decoration-none text-dark" style="flex:1">
-                            <?php if (!empty($it['ImagemUrl'])): ?>
-                                <img src="<?php echo e($it['ImagemUrl']); ?>" alt=""
+                            <?php if (!empty($it['imagem_id'])): ?>
+                                <img src="serve_imagem.php?id=<?php echo (int) $it['imagem_id']; ?>" alt=""
                                     style="width:120px;height:80px;object-fit:cover;border:1px solid #eaeaea;margin-right:12px;">
                             <?php else: ?>
                                 <div
