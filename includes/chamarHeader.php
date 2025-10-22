@@ -39,7 +39,7 @@ if (empty($_SESSION['loggedin'])) {
         <ul id="user-dropdown" class="user-menu" role="menu" aria-labelledby="user-name-trigger">
             <li role="none"><a role="menuitem" href="usuario.php">Conta</a></li>
             <li role="none"><a role="menuitem" href="compras.php">Compras</a></li>
-            <li role="none"><a role="menuitem" href="usuarioProdutos.php">Meus Produtos</a></li>
+            <li role="none"><a role="menuitem" href="meusprodutos.php">Meus Produtos</a></li>
             <li role="separator" class="divider" aria-hidden="true"></li>
             <li role="none"><a role="menuitem" href="logout.php">Sair</a></li>
         </ul>

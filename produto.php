@@ -17,55 +17,7 @@ if ($id <= 0) {
 // ações via POST (favoritar, addcart)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    if ($action === 'toggle_fav' && !empty($_SESSION['id'])) {
-        $userId = (int) $_SESSION['id'];
-        // garantir tabela 'favoritos', coluna em produtos e triggers para atualizar contador
-        try {
-            // criar tabela com chaves se não existir
-            $conexao->exec("CREATE TABLE IF NOT EXISTS favoritos (
-                Usuarios_idUsuarios INT NOT NULL,
-                Produtos_idProdutos INT NOT NULL,
-                criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (Usuarios_idUsuarios, Produtos_idProdutos),
-                INDEX fk_Fav_Usuarios (Usuarios_idUsuarios),
-                INDEX fk_Fav_Produtos (Produtos_idProdutos)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            // adicionar coluna de contador em produtos se não existir (MySQL 8+ suporta IF NOT EXISTS)
-            $conexao->exec("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS FavoritosCount INT NOT NULL DEFAULT 0");
-
-            // criar triggers se não existirem (verifica information_schema)
-            $chk = $conexao->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = :name");
-            // insert trigger
-            $chk->execute([':name' => 'trg_favoritos_after_insert']);
-            if (!$chk->fetchColumn()) {
-                $conexao->exec("CREATE TRIGGER trg_favoritos_after_insert AFTER INSERT ON favoritos FOR EACH ROW BEGIN UPDATE produtos SET FavoritosCount = FavoritosCount + 1 WHERE idProdutos = NEW.Produtos_idProdutos; END;");
-            }
-            // delete trigger
-            $chk->execute([':name' => 'trg_favoritos_after_delete']);
-            if (!$chk->fetchColumn()) {
-                $conexao->exec("CREATE TRIGGER trg_favoritos_after_delete AFTER DELETE ON favoritos FOR EACH ROW BEGIN UPDATE produtos SET FavoritosCount = GREATEST(0, FavoritosCount - 1) WHERE idProdutos = OLD.Produtos_idProdutos; END;");
-            }
-        } catch (Exception $e) {
-            // não bloquear ação do usuário por erro na criação de estrutura; seguimos sem triggers
-        }
-
-        // verificar existente
-        $stmt = $conexao->prepare('SELECT 1 FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
-        $stmt->execute([':uid' => $userId, ':pid' => $id]);
-        if ($stmt->fetchColumn()) {
-            // já favoritado, remover
-            $del = $conexao->prepare('DELETE FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
-            $del->execute([':uid' => $userId, ':pid' => $id]);
-            echo json_encode(['ok' => true, 'favorited' => false]);
-            exit;
-        } else {
-            $ins = $conexao->prepare('INSERT INTO favoritos (Usuarios_idUsuarios, Produtos_idProdutos) VALUES (:uid, :pid)');
-            $ins->execute([':uid' => $userId, ':pid' => $id]);
-            echo json_encode(['ok' => true, 'favorited' => true]);
-            exit;
-        }
-    }
+    // toggle_fav now handled by favoritos.php endpoint; produto.php keeps add_item handling
 
     if ($action === 'add_item' && !empty($_SESSION['id'])) {
         // ação simples: inserir em itenscompras com QuantidadeComprada = 1
@@ -295,10 +247,10 @@ if (!empty($_SESSION['id'])) {
                 <?php if (empty($_SESSION['id'])): ?>
                     window.location = 'login.php';
                 <?php else: ?>
-                    fetch('', {
+                    fetch('favoritos.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'action=toggle_fav'
+                        body: 'action=toggle_fav&product_id=<?php echo $produto['idProdutos']; ?>'
                     }).then(r => r.json()).then(j => {
                         if (j.ok) {
                             favIcon.src = j.favorited ? 'images/icon-fav-produto-selecionado.png' : 'images/icon-fav-produto-nao-selecionado.png';
