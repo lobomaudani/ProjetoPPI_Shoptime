@@ -17,20 +17,21 @@
         </div>
     </div>
 
-    <!-- Navegação de categorias e botões -->
-    <nav class="nav-categories">
-        <select onchange="filtrarCategoria(this.value)">
-            <option value="">Categorias</option>
-            <option value="hardware">Hardware</option>
-            <option value="software">Software</option>
-            <option value="perifericos">Periféricos</option>
-        </select>
-        <button onclick="location.href='/ofertas'">Ofertas</button>
-        <button onclick="location.href='/mais-vendidos'">Mais Vendidos</button>
-        <button onclick="location.href='/lancamentos'">Lançamentos</button>
-    </nav>
-
 </header>
+
+<!-- Navegação de categorias e botões -->
+<nav class="nav-categories">
+    <select onchange="filtrarCategoria(this.value)">
+        <option value="">Categorias</option>
+        <option value="hardware">Hardware</option>
+        <option value="software">Software</option>
+        <option value="perifericos">Periféricos</option>
+    </select>
+    <button onclick="location.href='/ofertas'">Ofertas</button>
+    <button onclick="location.href='/mais-vendidos'">Mais Vendidos</button>
+    <button onclick="location.href='/lancamentos'">Lançamentos</button>
+</nav>
+
 <script>
     // Small custom dropdown (dropup) behavior: toggles .open on the .user-area
     document.addEventListener('DOMContentLoaded', function () {

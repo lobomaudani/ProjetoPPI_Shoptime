@@ -249,7 +249,7 @@ session_start();
     <!-- <?php //include 'includes/chat.inc'; ?> -->
 
     <!-- Navegação de categorias e botões -->
-    <nav class="nav-categories">
+    <!-- <nav class="nav-categories">
         <select onchange="filtrarCategoria(this.value)">
             <option value="">Categorias</option>
             <option value="hardware">Hardware</option>
@@ -259,7 +259,7 @@ session_start();
         <button onclick="location.href='/ofertas'">Ofertas</button>
         <button onclick="location.href='/mais-vendidos'">Mais Vendidos</button>
         <button onclick="location.href='/lancamentos'">Lançamentos</button>
-    </nav>
+    </nav> -->
 
     <!-- Carrossel de banners clicáveis -->
     <section class="carousel">

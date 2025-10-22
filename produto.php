@@ -19,13 +19,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'toggle_fav' && !empty($_SESSION['id'])) {
         $userId = (int) $_SESSION['id'];
-        // tenta criar tabela favoritos se não existir (silencioso)
-        $conexao->exec("CREATE TABLE IF NOT EXISTS favoritos (
-            Usuarios_idUsuarios INT NOT NULL,
-            Produtos_idProdutos INT NOT NULL,
-            criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (Usuarios_idUsuarios, Produtos_idProdutos)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        // garantir tabela 'favoritos', coluna em produtos e triggers para atualizar contador
+        try {
+            // criar tabela com chaves se não existir
+            $conexao->exec("CREATE TABLE IF NOT EXISTS favoritos (
+                Usuarios_idUsuarios INT NOT NULL,
+                Produtos_idProdutos INT NOT NULL,
+                criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (Usuarios_idUsuarios, Produtos_idProdutos),
+                INDEX fk_Fav_Usuarios (Usuarios_idUsuarios),
+                INDEX fk_Fav_Produtos (Produtos_idProdutos)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            // adicionar coluna de contador em produtos se não existir (MySQL 8+ suporta IF NOT EXISTS)
+            $conexao->exec("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS FavoritosCount INT NOT NULL DEFAULT 0");
+
+            // criar triggers se não existirem (verifica information_schema)
+            $chk = $conexao->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = :name");
+            // insert trigger
+            $chk->execute([':name' => 'trg_favoritos_after_insert']);
+            if (!$chk->fetchColumn()) {
+                $conexao->exec("CREATE TRIGGER trg_favoritos_after_insert AFTER INSERT ON favoritos FOR EACH ROW BEGIN UPDATE produtos SET FavoritosCount = FavoritosCount + 1 WHERE idProdutos = NEW.Produtos_idProdutos; END;");
+            }
+            // delete trigger
+            $chk->execute([':name' => 'trg_favoritos_after_delete']);
+            if (!$chk->fetchColumn()) {
+                $conexao->exec("CREATE TRIGGER trg_favoritos_after_delete AFTER DELETE ON favoritos FOR EACH ROW BEGIN UPDATE produtos SET FavoritosCount = GREATEST(0, FavoritosCount - 1) WHERE idProdutos = OLD.Produtos_idProdutos; END;");
+            }
+        } catch (Exception $e) {
+            // não bloquear ação do usuário por erro na criação de estrutura; seguimos sem triggers
+        }
 
         // verificar existente
         $stmt = $conexao->prepare('SELECT 1 FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
@@ -178,6 +201,19 @@ if (!empty($_SESSION['id'])) {
         .btn-icon.favorited {
             color: #b30000;
         }
+
+        .product-card {
+            position: relative;
+        }
+
+        .fav-icon {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -212,7 +248,10 @@ if (!empty($_SESSION['id'])) {
             </div>
 
             <div class="col-md-5">
-                <div class="card p-3">
+                <div class="card p-3 product-card">
+                    <img id="favIcon" class="fav-icon"
+                        src="<?php echo $favorited ? 'images/icon-fav-produto-selecionado.png' : 'images/icon-fav-produto-nao-selecionado.png'; ?>"
+                        alt="Favoritar" />
                     <h3><?php echo e($produto['Nome']); ?></h3>
                     <p class="text-muted mb-1">Vendido por: <strong><?php echo e($produto['vendedorNome']); ?></strong>
                         — <?php echo e($produto['cargoNome']); ?></p>
@@ -224,17 +263,6 @@ if (!empty($_SESSION['id'])) {
                     <p class="mb-3"><strong>Marca:</strong> <?php echo e($produto['Marca'] ?? '—'); ?></p>
 
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <button id="favBtn" class="btn btn-icon <?php echo $favorited ? 'favorited' : ''; ?>"
-                            title="Favoritar">
-                            <!-- heart svg -->
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M12 21s-7-4.35-9.33-6.61C1.36 11.97 3.05 7.89 6.4 6.07 8.08 5.24 10.02 5.53 11 6.64c.98-1.11 2.92-1.4 4.6-.57 3.35 1.82 5.04 5.9 3.73 8.32C19 16.65 12 21 12 21z"
-                                    stroke="#b30000" stroke-width="0" fill="currentColor" />
-                            </svg>
-                        </button>
-
                         <button id="buyBtn" class="btn btn-primary">Comprar agora</button>
                         <?php if (!empty($_SESSION['id']) && $_SESSION['id'] == $produto['Usuarios_idUsuarios']): ?>
                             <a href="editarProduto.php?id=<?php echo $produto['idProdutos']; ?>"
@@ -259,21 +287,26 @@ if (!empty($_SESSION['id'])) {
             });
         });
 
-        // Favoritar
-        const favBtn = document.getElementById('favBtn');
-        favBtn && favBtn.addEventListener('click', function () {
-            fetch('', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=toggle_fav'
-            }).then(r => r.json()).then(j => {
-                if (j.ok) {
-                    favBtn.classList.toggle('btn-danger', j.favorited);
-                    favBtn.classList.toggle('btn-outline-secondary', !j.favorited);
-                    favBtn.textContent = j.favorited ? 'Favoritado' : 'Favoritar';
-                } else alert('Erro');
+        // Favoritar (imagem)
+        const favIcon = document.getElementById('favIcon');
+        if (favIcon) {
+            favIcon.addEventListener('click', function () {
+                // se não logado, redireciona para login
+                <?php if (empty($_SESSION['id'])): ?>
+                    window.location = 'login.php';
+                <?php else: ?>
+                    fetch('', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'action=toggle_fav'
+                    }).then(r => r.json()).then(j => {
+                        if (j.ok) {
+                            favIcon.src = j.favorited ? 'images/icon-fav-produto-selecionado.png' : 'images/icon-fav-produto-nao-selecionado.png';
+                        } else alert('Erro ao favoritar');
+                    });
+                <?php endif; ?>
             });
-        });
+        }
 
         // Comprar (adiciona item em itenscompras como placeholder)
         const buyBtn = document.getElementById('buyBtn');
