@@ -75,9 +75,6 @@ $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Debug: mostrar os dados dos produtos
-error_log("Produtos encontrados: " . print_r($produtos, true));
-
 function e($s)
 {
     return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
