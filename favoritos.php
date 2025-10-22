@@ -1,6 +1,13 @@
 <?php
 // Endpoint para toggle de favoritos (POST)
 session_start();
+
+// If accessed via GET in browser, redirect to the favorites page for a friendly UX
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Location: meusFavoritos.php');
+    exit;
+}
+
 header('Content-Type: application/json; charset=utf-8');
 include_once 'connections/conectarBD.php';
 
@@ -36,18 +43,32 @@ try {
         // ok, continue
     }
 
-    // toggle
-    $check = $conexao->prepare('SELECT 1 FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
-    $check->execute([':uid' => $userId, ':pid' => $productId]);
-    if ($check->fetchColumn()) {
-        $del = $conexao->prepare('DELETE FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
-        $del->execute([':uid' => $userId, ':pid' => $productId]);
-        echo json_encode(['ok' => true, 'favorited' => false]);
-        exit;
-    } else {
-        $ins = $conexao->prepare('INSERT INTO favoritos (Usuarios_idUsuarios, Produtos_idProdutos) VALUES (:uid, :pid)');
-        $ins->execute([':uid' => $userId, ':pid' => $productId]);
-        echo json_encode(['ok' => true, 'favorited' => true]);
+    // toggle with FavoritosCount update (atomic-ish)
+    $conexao->beginTransaction();
+    try {
+        $check = $conexao->prepare('SELECT 1 FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
+        $check->execute([':uid' => $userId, ':pid' => $productId]);
+        if ($check->fetchColumn()) {
+            $del = $conexao->prepare('DELETE FROM favoritos WHERE Usuarios_idUsuarios = :uid AND Produtos_idProdutos = :pid');
+            $del->execute([':uid' => $userId, ':pid' => $productId]);
+            // decrement FavoritosCount safely
+            $conexao->prepare('UPDATE produtos SET FavoritosCount = GREATEST(0, FavoritosCount - 1) WHERE idProdutos = :pid')->execute([':pid' => $productId]);
+            $conexao->commit();
+            echo json_encode(['ok' => true, 'favorited' => false]);
+            exit;
+        } else {
+            $ins = $conexao->prepare('INSERT INTO favoritos (Usuarios_idUsuarios, Produtos_idProdutos) VALUES (:uid, :pid)');
+            $ins->execute([':uid' => $userId, ':pid' => $productId]);
+            // increment FavoritosCount
+            $conexao->prepare('UPDATE produtos SET FavoritosCount = FavoritosCount + 1 WHERE idProdutos = :pid')->execute([':pid' => $productId]);
+            $conexao->commit();
+            echo json_encode(['ok' => true, 'favorited' => true]);
+            exit;
+        }
+    } catch (Exception $e) {
+        if ($conexao->inTransaction())
+            $conexao->rollBack();
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
         exit;
     }
 } catch (Exception $e) {
