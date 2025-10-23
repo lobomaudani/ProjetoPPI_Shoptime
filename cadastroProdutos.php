@@ -124,9 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // update existing product (only owner allowed; already checked when loading)
                         $upd = $conexao->prepare('UPDATE produtos SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
                         $upd->execute([':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quant' => ($unidades === '' ? null : (int) $unidades), ':cat' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca), ':id' => $editId, ':uid' => $userId]);
+                      
                         $prodId = $editId;
                     } else {
-                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :preco, :quantidade, :avaliacao, :categoria, :marca)";
+                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :desc,:preco, :quantidade, :avaliacao, :categoria, :marca)";
                         $ins = $conexao->prepare($sql);
                         $ins->execute([':uid' => $userId, ':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quantidade' => ($unidades === '' ? null : (int) $unidades), ':avaliacao' => null, ':categoria' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca)]);
                         $prodId = $conexao->lastInsertId();
