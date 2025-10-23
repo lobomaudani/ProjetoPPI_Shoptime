@@ -6,6 +6,7 @@ session_start();
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 include_once "connections/conectarBD.php";
+include_once __DIR__ . '/includes/user_helpers.php';
 $mensagem_status = '';
 $tipo_mensagem = '';
 $imagensSalvas = [];
@@ -52,6 +53,11 @@ try {
 
 // Processamento do POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF protection
+    if (!function_exists('validate_csrf_token') || !validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $mensagem_status = 'Token inválido. Por favor recarregue a página e tente novamente.';
+        $tipo_mensagem = 'danger';
+    }
     $nome = htmlspecialchars(trim($_POST['nome'] ?? ''));
     $descricao = htmlspecialchars(trim($_POST['descricao'] ?? ''));
     $preco = htmlspecialchars(trim($_POST['preco'] ?? ''));
@@ -124,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // update existing product (only owner allowed; already checked when loading)
                         $upd = $conexao->prepare('UPDATE produtos SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
                         $upd->execute([':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quant' => ($unidades === '' ? null : (int) $unidades), ':cat' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca), ':id' => $editId, ':uid' => $userId]);
-                      
+
                         $prodId = $editId;
                     } else {
                         $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :desc,:preco, :quantidade, :avaliacao, :categoria, :marca)";
@@ -249,7 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
                         <form action="" method="POST" enctype="multipart/form-data" id="produtoForm" novalidate>
+                            <?php echo function_exists('csrf_input') ? csrf_input() : ''; ?>
                             <?php $isEdit = ($editId > 0); ?>
+                            <?php if ($isEdit): ?>
+                                <div class="mb-2"><span class="badge bg-warning text-dark">Editando produto
+                                        #<?php echo (int) $editId; ?></span></div>
+                            <?php endif; ?>
                             <div class="mb-3"><label class="form-label">Nome do Produto <span
                                         class="text-danger">*</span></label>
                                 <input class="form-control" type="text" name="nome" required

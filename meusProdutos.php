@@ -1,6 +1,7 @@
 <?php
 require_once 'connections/conectarBD.php';
 session_start();
+include_once __DIR__ . '/includes/user_helpers.php';
 
 if (empty($_SESSION['id'])) {
     header('Location: login.php');
@@ -16,6 +17,11 @@ $offset = ($page - 1) * $perPage;
 
 // Handle deletion (must run before any output)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
+    // CSRF validation
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        header('Location: meusProdutos.php');
+        exit;
+    }
     $delId = (int) $_POST['delete_id'];
     // Verify ownership
     $check = $conexao->prepare('SELECT idProdutos FROM produtos WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
@@ -169,6 +175,7 @@ function e($s)
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <form method="POST" id="deleteProductForm" style="display:inline">
+                        <?php echo csrf_input(); ?>
                         <input type="hidden" name="delete_id" id="delete_id_input" value="">
                         <button class="btn btn-danger" type="submit">Excluir</button>
                     </form>
