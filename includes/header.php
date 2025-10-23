@@ -4,8 +4,10 @@
 
         <div class="search-bar" style="margin: 10px 10px;">
             <form action="pesquisaProdutos.php" method="GET" class="d-flex" role="search">
+                <?php $searchTerm = isset($_GET['q']) ? $_GET['q'] : ''; ?>
                 <input class="form-control me-2" type="search" name="q" placeholder="Buscar produtos..."
                     aria-label="Buscar produtos" required
+                    value="<?php echo htmlspecialchars($searchTerm, ENT_QUOTES, 'UTF-8'); ?>"
                     style="width: 300px; padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;">
                 <button class="btn btn-outline-success" type="submit"
                     style="padding: 6px 12px; border-radius: 4px;">Pesquisar</button>
