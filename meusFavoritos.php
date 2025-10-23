@@ -17,14 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['unfav_id'])) {
     exit;
 }
 
-$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, e.idEnderecoimagem AS imagem_id, u.Nome AS Vendedor
+$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, e.idEnderecoImagem AS imagem_id, u.Nome AS Vendedor
     FROM favoritos f
     JOIN produtos p ON p.idProdutos = f.Produtos_idProdutos
     LEFT JOIN (
-        SELECT idEnderecoimagem, Produtos_idProdutos
+        SELECT idEnderecoImagem, Produtos_idProdutos
         FROM enderecoimagem e1
-        WHERE e1.idEnderecoimagem = (
-            SELECT MIN(e2.idEnderecoimagem)
+        WHERE e1.idEnderecoImagem = (
+            SELECT MIN(e2.idEnderecoImagem)
             FROM enderecoimagem e2
             WHERE e2.Produtos_idProdutos = e1.Produtos_idProdutos
         )
@@ -63,9 +63,10 @@ function e($s)
                 <?php foreach ($items as $it): ?>
                     <div class="list-group-item mb-2 position-relative p-3 d-flex align-items-start">
                         <a href="produto.php?id=<?php echo $it['idProdutos']; ?>"
-                            class="d-flex align-items-center text-decoration-none text-dark" style="flex:1">
+                            class="d-flex align-items-center justify-content-start text-decoration-none text-dark">
                             <?php if (!empty($it['imagem_id'])): ?>
-                                <img src="serve_imagem.php?id=<?php echo (int) $it['imagem_id']; ?>" alt=""
+                                <?php $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>
+                                <img src="<?php echo $base; ?>/serve_imagem.php?id=<?php echo (int) $it['imagem_id']; ?>" alt=""
                                     style="width:120px;height:80px;object-fit:cover;border:1px solid #eaeaea;margin-right:12px;">
                             <?php else: ?>
                                 <div

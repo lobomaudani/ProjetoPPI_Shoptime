@@ -55,16 +55,16 @@ $countStmt = $conexao->prepare('SELECT COUNT(*) FROM produtos WHERE Usuarios_idU
 $countStmt->execute([':uid' => $userId]);
 $total = (int) $countStmt->fetchColumn();
 
-$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, p.Quantidade, e.idEnderecoimagem AS imagem_id, e.ImagemUrl
+$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, p.Quantidade, e.idEnderecoImagem AS imagem_id, e.ImagemUrl
      FROM produtos p
      LEFT JOIN (
-          SELECT idEnderecoimagem, Produtos_idProdutos, ImagemUrl
-          FROM enderecoimagem e1
-          WHERE e1.idEnderecoimagem = (
-               SELECT MIN(e2.idEnderecoimagem)
-               FROM enderecoimagem e2
-               WHERE e2.Produtos_idProdutos = e1.Produtos_idProdutos
-          )
+        SELECT idEnderecoImagem, Produtos_idProdutos, ImagemUrl
+        FROM enderecoimagem e1
+        WHERE e1.idEnderecoImagem = (
+            SELECT MIN(e2.idEnderecoImagem)
+            FROM enderecoimagem e2
+            WHERE e2.Produtos_idProdutos = e1.Produtos_idProdutos
+        )
      ) e ON e.Produtos_idProdutos = p.idProdutos
      WHERE p.Usuarios_idUsuarios = :uid
      ORDER BY p.idProdutos DESC
@@ -116,8 +116,9 @@ function e($s)
                 <div class="col-md-3 mb-4">
                     <div class="card h-100">
                         <?php if (!empty($p['imagem_id'])): ?>
-                            <img src="serve_imagem.php?id=<?php echo (int) $p['imagem_id']; ?>" class="card-img-top"
-                                style="height:160px;object-fit:cover;" alt="">
+                            <?php $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); ?>
+                            <img src="<?php echo $base; ?>/serve_imagem.php?id=<?php echo (int) $p['imagem_id']; ?>"
+                                class="card-img-top product-thumb" alt="">
                         <?php else: ?>
                             <div
                                 style="height:160px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#999">
@@ -130,7 +131,7 @@ function e($s)
                             <div class="mt-auto d-flex gap-2">
                                 <a href="produto.php?id=<?php echo $p['idProdutos']; ?>"
                                     class="btn btn-sm btn-outline-primary">Ver</a>
-                                <a href="editarProduto.php?id=<?php echo $p['idProdutos']; ?>"
+                                <a href="cadastroProdutos.php?id=<?php echo (int) $p['idProdutos']; ?>"
                                     class="btn btn-sm btn-secondary">Editar</a>
                                 <button class="btn btn-sm btn-danger btn-delete-prod"
                                     data-prod-id="<?php echo (int) $p['idProdutos']; ?>">Excluir</button>

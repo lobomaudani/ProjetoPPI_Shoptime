@@ -290,6 +290,74 @@ footer {
     padding: 6px;
 }
 
+/* Product thumbnails: force square aspect ratio and responsive width.
+   - thumbnails are squares (aspect-ratio: 1/1) and use object-fit:cover for consistent crop
+   - .fav-thumb remains a smaller preview for list views */
+.product-thumb,
+.card .card-img-top,
+.list-group-item img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    /* force 1:1 square */
+    object-fit: cover;
+    /* crop to fill */
+    display: block;
+    margin: 0 auto;
+    border: 1px solid #eee;
+    background: #fff;
+    padding: 6px;
+}
+
+.fav-thumb {
+    width: 160px;
+    height: 110px;
+    padding: 4px;
+    margin-right: 12px;
+}
+
+/* tighten spacing between image and product info */
+.list-group-item .d-flex.align-items-start {
+    gap: 12px;
+}
+
+/* produto.php gallery main size to match the example border */
+.gallery-main img,
+.gallery-main video {
+    width: 520px;
+    height: 420px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    border: 3px solid #e53935;
+    /* red border similar to example */
+    padding: 8px;
+    background: #fff;
+}
+
+/* Center product page content and tighten columns */
+.product-page-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.product-columns {
+    display: flex;
+    gap: 20px;
+    /* smaller gap to bring image closer to info */
+    align-items: flex-start;
+    justify-content: center;
+    /* center the two columns */
+}
+
+.product-columns .col-left {
+    flex: 0 0 auto;
+}
+
+.product-columns .col-right {
+    flex: 0 0 420px;
+    /* fixed width for info card */
+}
+
 input.form-control,
 .form-select,
 textarea.form-control {

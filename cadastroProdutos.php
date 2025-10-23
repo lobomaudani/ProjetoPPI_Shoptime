@@ -1,10 +1,44 @@
 <?php
 session_start();
 
+// Avoid printing deprecation/notice messages into the HTML (they were showing up inside form fields)
+// You can remove or adjust this in development if you want to see notices again.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+
 include_once "connections/conectarBD.php";
 $mensagem_status = '';
 $tipo_mensagem = '';
 $imagensSalvas = [];
+
+// Edit mode: if id provided, load product and images for editing
+$editId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$editingProduct = null;
+$existingImages = [];
+if ($editId > 0) {
+    // must be logged in and owner
+    if (empty($_SESSION['id'])) {
+        header('Location: login.php');
+        exit;
+    }
+    try {
+        $pstmt = $conexao->prepare('SELECT * FROM produtos WHERE idProdutos = :id');
+        $pstmt->execute([':id' => $editId]);
+        $editingProduct = $pstmt->fetch(PDO::FETCH_ASSOC);
+        if (!$editingProduct || (int) $editingProduct['Usuarios_idUsuarios'] !== (int) $_SESSION['id']) {
+            // not found or not owner
+            header('Location: meusProdutos.php');
+            exit;
+        }
+        $imgq = $conexao->prepare('SELECT idEnderecoImagem, ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos = :pid');
+        $imgq->execute([':pid' => $editId]);
+        $existingImages = $imgq->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // ignore and treat as create
+        $editingProduct = null;
+        $existingImages = [];
+        $editId = 0;
+    }
+}
 
 // Buscar categorias
 $categorias = [];
@@ -86,14 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $conexao->beginTransaction();
                     $userId = (int) $_SESSION['id'];
-                    $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :preco, :quantidade, :avaliacao, :categoria, :marca)";
-                    $ins = $conexao->prepare($sql);
-                    $ins->execute([':uid' => $userId, ':nome' => $nome, ':preco' => ($preco === '' ? null : $preco), ':quantidade' => ($unidades === '' ? null : (int) $unidades), ':avaliacao' => null, ':categoria' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca)]);
-                    $prodId = $conexao->lastInsertId();
-                    // exigir pelo menos uma imagem
-                    if (empty($imagensSalvas)) {
-                        throw new Exception('Envie ao menos uma imagem para o produto.');
+                    if ($editId > 0) {
+                        // update existing product (only owner allowed; already checked when loading)
+                        $upd = $conexao->prepare('UPDATE produtos SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
+                        $upd->execute([':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quant' => ($unidades === '' ? null : (int) $unidades), ':cat' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca), ':id' => $editId, ':uid' => $userId]);
+                        $prodId = $editId;
+                    } else {
+                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :preco, :quantidade, :avaliacao, :categoria, :marca)";
+                        $ins = $conexao->prepare($sql);
+                        $ins->execute([':uid' => $userId, ':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quantidade' => ($unidades === '' ? null : (int) $unidades), ':avaliacao' => null, ':categoria' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca)]);
+                        $prodId = $conexao->lastInsertId();
                     }
+
+                    // insert new images if present
                     if (!empty($imagensSalvas)) {
                         $insImg = $conexao->prepare("INSERT INTO enderecoimagem (ImagemUrl, Produtos_idProdutos) VALUES (:img, :pid)");
                         foreach ($imagensSalvas as $f) {
@@ -102,7 +141,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $insImg->execute();
                         }
                     }
+
+                    // require at least one image (existing + new)
+                    $countStmt = $conexao->prepare('SELECT COUNT(*) FROM enderecoimagem WHERE Produtos_idProdutos = :pid');
+                    $countStmt->execute([':pid' => $prodId]);
+                    $totalImgs = (int) $countStmt->fetchColumn();
+                    if ($totalImgs < 1) {
+                        throw new Exception('Envie ao menos uma imagem para o produto.');
+                    }
+
                     $conexao->commit();
+                    if ($editId > 0) {
+                        header('Location: meusProdutos.php');
+                        exit;
+                    }
                     $mensagem_status = 'Produto cadastrado com sucesso!';
                     $tipo_mensagem = 'success';
                     $nome = $descricao = $preco = $unidades = $categoria = $marca = '';
@@ -196,24 +248,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
                         <form action="" method="POST" enctype="multipart/form-data" id="produtoForm" novalidate>
+                            <?php $isEdit = ($editId > 0); ?>
                             <div class="mb-3"><label class="form-label">Nome do Produto <span
                                         class="text-danger">*</span></label>
                                 <input class="form-control" type="text" name="nome" required
-                                    placeholder="Digite o nome do produto">
+                                    placeholder="Digite o nome do produto"
+                                    value="<?php echo $isEdit ? htmlspecialchars($editingProduct['Nome'] ?? '') : ''; ?>">
                             </div>
                             <div class="mb-3"><label class="form-label">Descrição <span class="text-danger">*</span></label>
                                 <textarea class="form-control" name="descricao" rows="4" required
-                                    placeholder="Esse produto contém..."></textarea>
+                                    placeholder="Esse produto contém..."><?php echo $isEdit ? htmlspecialchars($editingProduct['Descricao'] ?? '') : ''; ?></textarea>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6"><label class="form-label">Preço <span
                                             class="text-danger">*</span></label>
                                     <input class="form-control" type="number" step="0.01" name="preco" required
-                                        placeholder="Digite o preço do produto">
+                                        placeholder="Digite o preço do produto"
+                                        value="<?php echo $isEdit ? htmlspecialchars($editingProduct['Preco'] ?? '') : ''; ?>">
                                 </div>
                                 <div class="col-md-6"><label class="form-label">Unidades em estoque</label>
-                                    <input class="form-control" type="number" name="unidades" value="1" min="1" required
-                                        placeholder="Digite a quantidade no estoque">
+                                    <input class="form-control" type="number" name="unidades"
+                                        value="<?php echo $isEdit ? htmlspecialchars($editingProduct['Quantidade'] ?? 1) : '1'; ?>"
+                                        min="1" required placeholder="Digite a quantidade no estoque">
                                 </div>
                             </div>
                             <div class="row g-3 mt-3">
@@ -224,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <option value="">Sem categorias</option>
                                         <?php else:
                                             foreach ($categorias as $cat): ?>
-                                                <option value="<?php echo htmlspecialchars($cat['id']); ?>">
+                                                <option value="<?php echo htmlspecialchars($cat['id']); ?>" <?php echo ($isEdit && $editingProduct['Categorias_idCategorias'] == $cat['id']) ? 'selected' : ''; ?>>
                                                     <?php echo htmlspecialchars($cat['nome']); ?>
                                                 </option>
                                             <?php endforeach; endif; ?>
@@ -232,7 +288,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                                 <div class="col-md-6"><label class="form-label">Marca</label>
                                     <input class="form-control" type="text" name="marca" id="marca"
-                                        placeholder="Marca (opcional)">
+                                        placeholder="Marca (opcional)"
+                                        value="<?php echo $isEdit ? htmlspecialchars($editingProduct['Marca'] ?? '') : ''; ?>">
                                 </div>
                             </div>
                             <div class="row g-3 mt-2">
@@ -247,9 +304,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="mt-3" id="previewArea">
                                 <div class="preview-grid" id="previewGrid"></div>
                             </div>
+                            <?php if ($isEdit && !empty($existingImages)): ?>
+                                <div class="mb-3">
+                                    <label class="form-label">Imagens atuais</label>
+                                    <div class="d-flex gap-2 flex-wrap" id="existingImages">
+                                        <?php foreach ($existingImages as $img):
+                                            $iid = (int) $img['idEnderecoImagem'];
+                                            $src = (is_string($img['ImagemUrl']) && (strpos($img['ImagemUrl'], 'uploads/') === 0 || preg_match('#^https?://#i', $img['ImagemUrl']))) ? $img['ImagemUrl'] : (rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/serve_imagem.php?id=' . $iid);
+                                            ?>
+                                            <div class="existing-item" data-id="<?php echo $iid; ?>"
+                                                style="width:120px;text-align:center;margin-bottom:6px;position:relative;">
+                                                <img src="<?php echo htmlspecialchars($src); ?>"
+                                                    style="width:120px;height:80px;object-fit:cover;border:1px solid #ddd;padding:2px;display:block;margin-bottom:4px;">
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-existing"
+                                                    style="position:absolute;right:6px;top:6px;">✕</button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
                             <div class="text-end mt-3"><a href="index.php"
                                     class="btn btn-outline-secondary me-2">Cancelar</a>
-                                <button type="submit" class="btn btn-primary" id="btnSalvar">Cadastrar</button>
+                                <button type="submit" class="btn btn-primary"
+                                    id="btnSalvar"><?php echo $isEdit ? 'Salvar alterações' : 'Cadastrar'; ?></button>
                             </div>
                         </form>
                     </div>
@@ -292,6 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 renderPreviews();
             }
 
+            // Attach to input change
             if (input) {
                 input.addEventListener('change', function (e) {
                     const files = Array.from(e.target.files || []);
@@ -305,12 +384,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
+            // Handle removal of existing images via AJAX
+            function initExistingRemovalButtons() {
+                document.querySelectorAll('.btn-remove-existing').forEach(function (btn) {
+                    // avoid double-binding
+                    if (btn._bound) return; btn._bound = true;
+                    btn.addEventListener('click', function (e) {
+                        var wrapper = e.target.closest('.existing-item');
+                        var id = wrapper.getAttribute('data-id');
+                        if (!confirm('Remover esta imagem? Esta ação não pode ser desfeita.')) return;
+                        fetch('editarProduto.php?action=remover_imagem', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'idEnderecoImagem=' + encodeURIComponent(id)
+                        }).then(function (resp) { return resp.json(); }).then(function (json) {
+                            if (json && json.success) {
+                                wrapper.parentNode.removeChild(wrapper);
+                            } else {
+                                alert('Erro ao remover imagem: ' + (json && json.error ? json.error : 'erro desconhecido'));
+                            }
+                        }).catch(function (err) {
+                            console.error(err);
+                            alert('Falha na requisição. Veja o console.');
+                        });
+                    });
+                });
+            }
+
+            initExistingRemovalButtons();
+
             if (form) {
                 form.addEventListener('submit', function (e) {
                     const nome = form.nome.value.trim(); const descricao = form.descricao.value.trim(); const preco = form.preco.value; const unidades = form.unidades.value; const categoria = (form.categoria ? form.categoria.value : '');
                     if (!nome || !descricao || preco === '' || unidades === '') { e.preventDefault(); alert('Preencha os campos obrigatórios antes de enviar.'); return; }
                     if (!categoria) { e.preventDefault(); alert('Por favor selecione uma categoria para o produto.'); return; }
-                    if (dt.files.length === 0) { e.preventDefault(); alert('Envie ao menos uma imagem para o produto.'); return; }
+                    const existingCount = document.querySelectorAll('.existing-item').length;
+                    if (existingCount + dt.files.length === 0) { e.preventDefault(); alert('Envie ao menos uma imagem para o produto.'); return; }
+                    // attach dt.files to input already performed in renderPreviews
                 });
             }
         })();

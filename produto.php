@@ -171,16 +171,18 @@ if (!empty($_SESSION['id'])) {
 
 <body class="bg-light">
     <?php include 'includes/header.php'; ?>
-    <main class="container my-4">
-        <div class="row">
-            <div class="col-md-7">
+    <main class="container my-4 product-page-wrapper">
+        <div class="product-columns">
+            <div class="col-left">
                 <div class="d-flex gap-3">
                     <div class="thumb-list">
                         <?php foreach ($imgs as $i): ?>
                             <?php if ($i['type'] === 'path' && preg_match('/^uploads\//', $i['src'])): ?>
-                                <img src="<?php echo e($i['src']); ?>" data-src="<?php echo e($i['src']); ?>" class="thumb-img">
+                                <img src="<?php echo e($i['src']); ?>" data-src="<?php echo e($i['src']); ?>"
+                                    class="thumb-img fav-thumb">
                             <?php else: ?>
-                                <img src="<?php echo e($i['src']); ?>" data-src="<?php echo e($i['src']); ?>" class="thumb-img">
+                                <img src="<?php echo e($i['src']); ?>" data-src="<?php echo e($i['src']); ?>"
+                                    class="thumb-img fav-thumb">
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
@@ -199,14 +201,14 @@ if (!empty($_SESSION['id'])) {
                 </div>
             </div>
 
-            <div class="col-md-5">
+            <div class="col-right">
                 <div class="card p-3 product-card">
                     <img id="favIcon" class="fav-icon"
                         src="<?php echo $favorited ? 'images/icon-fav-produto-selecionado.png' : 'images/icon-fav-produto-nao-selecionado.png'; ?>"
                         alt="Favoritar" />
                     <h3><?php echo e($produto['Nome']); ?></h3>
                     <p class="text-muted mb-1">Vendido por: <strong><?php echo e($produto['vendedorNome']); ?></strong>
-                        — <?php echo e($produto['cargoNome']); ?></p>
+                    </p>
                     <h4 class="text-danger">R$ <?php echo number_format((float) $produto['Preco'], 2, ',', '.'); ?></h4>
                     <p><?php echo nl2br(e($produto['Quantidade'] ? "Estoque: " . $produto['Quantidade'] : 'Sem informação de estoque')); ?>
                     </p>
