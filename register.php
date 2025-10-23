@@ -11,14 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST["password"] != $_POST["password-confirm"]) {
         $error = "As senhas não estão validando entre si!";
     } else {
-    include 'connections/conectarBD.php';
-    include_once 'includes/user_helpers.php';
+        include 'connections/conectarBD.php';
+        include_once 'includes/user_helpers.php';
 
         $autorizadoInsercao = true;
 
         try {
             $stmtEmail = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email");
-            $stmtEmail->execute([':email' => $_POST["email"]]);        
+            $stmtEmail->execute([':email' => $_POST["email"]]);
 
             $stmtCpf = $conexao->prepare("SELECT COUNT(*) FROM usuarios WHERE cpf = :cpf");
             $stmtCpf->execute([':cpf' => $_POST["cpf"]]);
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tipo_mensagem = 'error';
                 $mensagem_status = "Este e-mail já está cadastrado.";
                 $autorizadoInsercao = false;
-            } else if($stmtCpf->fetchColumn() > 0){
+            } else if ($stmtCpf->fetchColumn() > 0) {
                 $tipo_mensagem = 'error';
                 $mensagem_status = "Este CPF já está cadastrado.";
                 $autorizadoInsercao = false;
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $idCargo = 1;
 
-            if($autorizadoInsercao) {
+            if ($autorizadoInsercao) {
 
 
                 // Preparar valores vindos do POST
@@ -116,10 +116,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Inserir até 3 endereços se foram preenchidos
                 if (!empty($_POST['endereco']) && is_array($_POST['endereco'])) {
-                    $insAddr = $conexao->prepare("INSERT INTO Endereco (Rua, Numero, Bairro, Cidade, Estado, CEP, Usuarios_idUsuarios) VALUES (:rua, :numero, :bairro, :cidade, :estado, :cep, :uid)");
+                    $insAddr = $conexao->prepare("INSERT INTO enderecos (Rua, Numero, Bairro, Cidade, Estado, CEP, Usuarios_idUsuarios) VALUES (:rua, :numero, :bairro, :cidade, :estado, :cep, :uid)");
                     $count = 0;
                     foreach ($_POST['endereco'] as $addr) {
-                        if ($count >= 3) break;
+                        if ($count >= 3)
+                            break;
                         $rua = trim($addr['rua'] ?? '');
                         $numero = trim($addr['numero'] ?? '');
                         $bairro = trim($addr['bairro'] ?? '');
@@ -166,10 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // validação simples de idade mínima 16 anos no cliente
-        (function(){
+        (function () {
             const form = document.querySelector('form');
             if (!form) return;
-            form.addEventListener('submit', function(e){
+            form.addEventListener('submit', function (e) {
                 const dob = document.getElementById('data_nascimento');
                 if (dob && dob.value) {
                     const birth = new Date(dob.value);
@@ -199,75 +200,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="row justify-content-center">
             <div class="col-12 col-md-9 col-lg-7">
                 <div class="card shadow-sm p-3">
-                <h2 class="text-center mb-4">Registrar conta:</h2>
+                    <h2 class="text-center mb-4">Registrar conta:</h2>
 
-                <?php if (isset($error)): ?>
-                    <div class="alert alert-danger" role="alert">
-                        <?php echo $error; ?>
-                    </div>
-                <?php endif; ?>
+                    <?php if (isset($error)): ?>
+                        <div class="alert alert-danger" role="alert">
+                            <?php echo $error; ?>
+                        </div>
+                    <?php endif; ?>
 
-                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Nome Completo:</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="cpf" class="form-label">CPF:</label>
-                        <input type="text" class="form-control" id="cpf" name="cpf" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="data_nascimento" class="form-label">Data de Nascimento:</label>
-                        <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" required>
-                    </div>
+                    <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Nome Completo:</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="cpf" class="form-label">CPF:</label>
+                            <input type="text" class="form-control" id="cpf" name="cpf" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="data_nascimento" class="form-label">Data de Nascimento:</label>
+                            <input type="date" class="form-control" id="data_nascimento" name="data_nascimento"
+                                required>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="profile_photo" class="form-label">Foto de Perfil (opcional):</label>
-                        <input type="file" class="form-control" id="profile_photo" name="profile_photo" accept="image/*">
-                    </div>
-                    <!-- Endereços: accordion collapsible (até 3) -->
-                    <div class="mb-3">
-                        <label class="form-label">Endereço (até 3) — preencha ao menos Rua ou CEP para cadastrar cada um</label>
-                        <div class="accordion" id="addressesAccordion">
-                            <?php for ($i = 0; $i < 3; $i++): ?>
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="heading<?= $i ?>">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $i ?>" aria-expanded="false" aria-controls="collapse<?= $i ?>">
-                                            Endereço <?= $i + 1 ?>
-                                        </button>
-                                    </h2>
-                                    <div id="collapse<?= $i ?>" class="accordion-collapse collapse" aria-labelledby="heading<?= $i ?>" data-bs-parent="#addressesAccordion">
-                                        <div class="accordion-body">
-                                            <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][rua]" placeholder="Rua">
-                                            <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][numero]" placeholder="Número">
-                                            <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][bairro]" placeholder="Bairro">
-                                            <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][cidade]" placeholder="Cidade">
-                                            <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][estado]" placeholder="Estado">
-                                            <input type="text" class="form-control" name="endereco[<?= $i ?>][cep]" placeholder="CEP">
+                        <div class="mb-3">
+                            <label for="profile_photo" class="form-label">Foto de Perfil (opcional):</label>
+                            <input type="file" class="form-control" id="profile_photo" name="profile_photo"
+                                accept="image/*">
+                        </div>
+                        <!-- Endereços: accordion collapsible (até 3) -->
+                        <div class="mb-3">
+                            <label class="form-label">Endereço (até 3) — preencha ao menos Rua ou CEP para cadastrar
+                                cada um</label>
+                            <div class="accordion" id="addressesAccordion">
+                                <?php for ($i = 0; $i < 3; $i++): ?>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading<?= $i ?>">
+                                            <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#collapse<?= $i ?>"
+                                                aria-expanded="false" aria-controls="collapse<?= $i ?>">
+                                                Endereço <?= $i + 1 ?>
+                                            </button>
+                                        </h2>
+                                        <div id="collapse<?= $i ?>" class="accordion-collapse collapse"
+                                            aria-labelledby="heading<?= $i ?>" data-bs-parent="#addressesAccordion">
+                                            <div class="accordion-body">
+                                                <input type="text" class="form-control mb-1" name="endereco[<?= $i ?>][rua]"
+                                                    placeholder="Rua">
+                                                <input type="text" class="form-control mb-1"
+                                                    name="endereco[<?= $i ?>][numero]" placeholder="Número">
+                                                <input type="text" class="form-control mb-1"
+                                                    name="endereco[<?= $i ?>][bairro]" placeholder="Bairro">
+                                                <input type="text" class="form-control mb-1"
+                                                    name="endereco[<?= $i ?>][cidade]" placeholder="Cidade">
+                                                <input type="text" class="form-control mb-1"
+                                                    name="endereco[<?= $i ?>][estado]" placeholder="Estado">
+                                                <input type="text" class="form-control" name="endereco[<?= $i ?>][cep]"
+                                                    placeholder="CEP">
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            <?php endfor; ?>
+                                <?php endfor; ?>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email:</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Senha:</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password-confirm" class="form-label">Confirmar Senha:</label>
-                        <input type="password" class="form-control" id="password-confirm" name="password-confirm"
-                            required>
-                    </div>
-                    <div class="text-end mt-3">
-                        <a href="index.php" class="btn btn-outline-secondary me-2">Cancelar</a>
-                        <button type="submit" id="submitBtn" class="btn btn-primary">Cadastrar</button>
-                    </div>
-                </form>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Senha:</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password-confirm" class="form-label">Confirmar Senha:</label>
+                            <input type="password" class="form-control" id="password-confirm" name="password-confirm"
+                                required>
+                        </div>
+                        <div class="text-end mt-3">
+                            <a href="index.php" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" id="submitBtn" class="btn btn-primary">Cadastrar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

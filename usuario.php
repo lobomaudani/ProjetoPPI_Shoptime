@@ -18,9 +18,100 @@ $stmt->execute([':id' => $userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $addresses = [];
-$adStmt = $conexao->prepare('SELECT * FROM Endereco WHERE Usuarios_idUsuarios = :id');
+$adStmt = $conexao->prepare('SELECT * FROM enderecos WHERE Usuarios_idUsuarios = :id');
 $adStmt->execute([':id' => $userId]);
 $addresses = $adStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// counts for user stats
+$prodCountStmt = $conexao->prepare('SELECT COUNT(*) FROM produtos WHERE Usuarios_idUsuarios = :id');
+$prodCountStmt->execute([':id' => $userId]);
+$prodCount = (int) $prodCountStmt->fetchColumn();
+
+$favCountStmt = $conexao->prepare('SELECT COUNT(*) FROM favoritos WHERE Usuarios_idUsuarios = :id');
+$favCountStmt->execute([':id' => $userId]);
+$favCount = (int) $favCountStmt->fetchColumn();
+
+// Handle account deletion (confirmed via POST delete_account)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
+    // CSRF check
+    if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+        $mensagem = 'Token inválido. Tente novamente.';
+        $tipo_mensagem = 'error';
+    } else {
+        // require current password for security
+        $provided = $_POST['confirm_password'] ?? '';
+        $pwStmt = $conexao->prepare('SELECT Senha FROM usuarios WHERE idUsuarios = :id');
+        $pwStmt->execute([':id' => $userId]);
+        $row = $pwStmt->fetch(PDO::FETCH_ASSOC);
+        $hash = $row['Senha'] ?? '';
+        if (!password_verify($provided, $hash)) {
+            $mensagem = 'Senha incorreta. A conta não foi removida.';
+            $tipo_mensagem = 'error';
+        } else {
+            // proceed with deletion
+            // collect file paths to remove after DB deletion
+            $filesToRemove = [];
+            if (!empty($user['ImagemUrl']) && is_string($user['ImagemUrl']) && strpos($user['ImagemUrl'], 'uploads/') === 0) {
+                $filesToRemove[] = __DIR__ . '/' . $user['ImagemUrl'];
+                // also try thumbnail variant (_thumb)
+                $thumbPath = preg_replace('/(\.[^.]+)$/', '_thumb$1', __DIR__ . '/' . $user['ImagemUrl']);
+                $filesToRemove[] = $thumbPath;
+            }
+
+            // collect product image paths
+            try {
+                $q = $conexao->prepare("SELECT e.ImagemUrl FROM enderecoimagem e JOIN produtos p ON p.idProdutos = e.Produtos_idProdutos WHERE p.Usuarios_idUsuarios = :uid");
+                $q->execute([':uid' => $userId]);
+                $rows = $q->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rows as $r) {
+                    if (!empty($r['ImagemUrl']) && is_string($r['ImagemUrl']) && strpos($r['ImagemUrl'], 'uploads/') === 0) {
+                        $filesToRemove[] = __DIR__ . '/' . $r['ImagemUrl'];
+                        $filesToRemove[] = preg_replace('/(\.[^.]+)$/', '_thumb$1', __DIR__ . '/' . $r['ImagemUrl']);
+                    }
+                }
+            } catch (Exception $_) {
+                // ignore
+            }
+
+            // delete user and cascade (FKs should remove related rows)
+            try {
+                $conexao->beginTransaction();
+                $del = $conexao->prepare('DELETE FROM usuarios WHERE idUsuarios = :id');
+                $del->execute([':id' => $userId]);
+                $conexao->commit();
+
+                // remove files
+                foreach (array_unique($filesToRemove) as $f) {
+                    if (is_file($f))
+                        @unlink($f);
+                }
+
+                // destroy session and redirect
+                $_SESSION = [];
+                if (ini_get('session.use_cookies')) {
+                    $params = session_get_cookie_params();
+                    setcookie(
+                        session_name(),
+                        '',
+                        time() - 42000,
+                        $params['path'],
+                        $params['domain'],
+                        $params['secure'],
+                        $params['httponly']
+                    );
+                }
+                session_destroy();
+                header('Location: index.php');
+                exit;
+            } catch (Exception $e) {
+                if ($conexao->inTransaction())
+                    $conexao->rollBack();
+                $mensagem = 'Falha ao deletar conta: ' . $e->getMessage();
+                $tipo_mensagem = 'error';
+            }
+        }
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // atualizar nome, data de nascimento, foto e endereços
@@ -55,10 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $up->execute([':nome' => $nome, ':nasc' => $dataNascimento, ':img' => $imagemUrl, ':id' => $userId]);
 
             // endereços: simplificar - apagar os atuais e inserir os enviados (até 3)
-            $del = $conexao->prepare('DELETE FROM Endereco WHERE Usuarios_idUsuarios = :id');
+            $del = $conexao->prepare('DELETE FROM enderecos WHERE Usuarios_idUsuarios = :id');
             $del->execute([':id' => $userId]);
             if (!empty($_POST['endereco']) && is_array($_POST['endereco'])) {
-                $insAddr = $conexao->prepare("INSERT INTO Enderecos (Rua, Numero, Bairro, Cidade, Estado, CEP, Usuarios_idUsuarios) VALUES (:rua, :numero, :bairro, :cidade, :estado, :cep, :uid)");
+                $insAddr = $conexao->prepare("INSERT INTO enderecos (Rua, Numero, Bairro, Cidade, Estado, CEP, Usuarios_idUsuarios) VALUES (:rua, :numero, :bairro, :cidade, :estado, :cep, :uid)");
                 $count = 0;
                 foreach ($_POST['endereco'] as $addr) {
                     if ($count >= 3)
@@ -78,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mensagem = 'Perfil atualizado com sucesso.';
             $tipo_mensagem = 'success';
-            // recarregar
+            // recarregar (redirect so we show fresh data)
             header('Location: usuario.php');
             exit;
         }
@@ -98,18 +189,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 
 <body>
-    <header><?php include 'includes/logo.inc'; ?></header>
+    <?php include 'includes/header.php'; ?>
+
     <main class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-9 col-lg-7">
                 <div class="card shadow-sm p-3">
-                    <h4>Meu Perfil</h4>
+                    <div class="d-flex align-items-center mb-3">
+                        <div style="flex:1">
+                            <h4 class="mb-0">Meu Perfil</h4>
+                            <small class="text-muted"><?php echo htmlspecialchars($user['Email'] ?? ''); ?></small>
+                        </div>
+                        <div class="text-end">
+                            <div><strong><?php echo $prodCount; ?></strong> produtos</div>
+                            <div class="text-muted"><strong><?php echo $favCount; ?></strong> favoritos</div>
+                        </div>
+                    </div>
                     <?php if ($mensagem): ?>
                         <div class="alert alert-<?php echo htmlspecialchars($tipo_mensagem); ?>">
                             <?php echo htmlspecialchars($mensagem); ?>
                         </div>
                     <?php endif; ?>
                     <form action="" method="post" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="mb-3">
                             <label class="form-label">Nome</label>
                             <input class="form-control" name="username"
@@ -171,14 +273,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endfor; ?>
                             </div>
                         </div>
-                        <div class="text-end">
-                            <button class="btn btn-primary" type="submit">Salvar</button>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="change_password.php" class="btn btn-outline-secondary me-2">Mudar senha</a>
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+                                    data-bs-target="#confirmDeleteAccountModal">Deletar minha conta</button>
+                            </div>
+                            <div class="text-end">
+                                <button class="btn btn-primary" type="submit">Salvar</button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Modal confirmar exclusão da conta -->
+    <div class="modal fade" id="confirmDeleteAccountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Deletar conta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja deletar sua conta? Esta ação é irreversível e removerá seus produtos,
+                        favoritos e dados.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="POST" style="display:inline">
+                        <?php echo csrf_input(); ?>
+                        <input type="hidden" name="delete_account" value="1">
+                        <div class="mb-2">
+                            <label class="form-label">Confirme sua senha para deletar</label>
+                            <input type="password" name="confirm_password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-danger">Deletar minha conta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
