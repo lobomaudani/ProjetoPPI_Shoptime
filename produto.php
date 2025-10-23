@@ -219,7 +219,7 @@ if (!empty($_SESSION['id'])) {
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <button id="buyBtn" class="btn btn-primary">Comprar agora</button>
                         <?php if (!empty($_SESSION['id']) && $_SESSION['id'] == $produto['Usuarios_idUsuarios']): ?>
-                            <a href="editarProduto.php?id=<?php echo $produto['idProdutos']; ?>"
+                            <a href="cadastroProdutos.php?id=<?php echo $produto['idProdutos']; ?>"
                                 class="btn btn-outline-secondary">Editar Produto</a>
                         <?php endif; ?>
                     </div>
