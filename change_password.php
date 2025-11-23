@@ -49,10 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="pt-br">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Alterar Senha</title>
+    <?php $pageTitle = 'Alterar Senha';
+    include 'includes/head.php'; ?>
 </head>
 
 <body>
@@ -64,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h4>Alterar Senha</h4>
                     <?php if ($mensagem): ?>
                         <div class="alert alert-<?php echo htmlspecialchars($tipo); ?>">
-                            <?php echo htmlspecialchars($mensagem); ?></div>
+                            <?php echo htmlspecialchars($mensagem); ?>
+                        </div>
                     <?php endif; ?>
                     <form method="post">
                         <?php echo csrf_input(); ?>

@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `CPF` varchar(14) NOT NULL,
   `Senha` varchar(255) NOT NULL,
   `Cargos_idCargos` int NOT NULL,
-  `ImagemUrl` longblob,
   PRIMARY KEY (`idUsuarios`),
   UNIQUE KEY `CPF_UNIQUE` (`CPF`),
   UNIQUE KEY `Email_UNIQUE` (`Email`),
