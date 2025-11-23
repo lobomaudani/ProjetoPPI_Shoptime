@@ -17,6 +17,9 @@
         <div class="user-actions" id="user-actions">
             <?php include __DIR__ . '/chamarHeader.php'; ?>
         </div>
+        <div style="margin-left:8px;">
+            <button id="siteThemeToggle" title="Alternar tema" class="btn btn-outline-light">🌙</button>
+        </div>
     </div>
 
 </header>
@@ -205,49 +208,7 @@
 </script>
 
 <!-- Floating chat/unread button (persistent) -->
-<style>
-    #chatFloatingBtn {
-        position: fixed;
-        right: 18px;
-        bottom: 18px;
-        z-index: 1200;
-    }
-
-    #chatFloatingBtn .fab {
-        background: #c1121f;
-        color: #fff;
-        border-radius: 999px;
-        width: 56px;
-        height: 56px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-        cursor: pointer;
-        border: none
-    }
-
-    #chatFloatingBtn .badge {
-        position: absolute;
-        top: -6px;
-        right: -6px;
-        background: #ffdd57;
-        color: #000;
-        min-width: 20px;
-        height: 20px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        padding: 0 6px;
-        font-weight: 600
-    }
-
-    #chatFloatingBtn .fab:focus {
-        outline: none;
-    }
-</style>
+<!-- Floating chat/unread button (persistent) -->
 
 <div id="chatFloatingBtn" aria-hidden="false">
     <button id="chatFab" class="fab" title="Mensagens">
@@ -261,6 +222,7 @@
         const isLogged = <?php echo empty($_SESSION['id']) ? 'false' : 'true'; ?>;
         const chatFab = document.getElementById('chatFab');
         const badge = document.getElementById('chatUnreadBadge');
+        const siteToggle = document.getElementById('siteThemeToggle');
 
         function updateBadge(count) {
             if (!badge) return;
@@ -279,9 +241,11 @@
                 if (j && j.ok) updateBadge(parseInt(j.count || 0));
             } catch (e) {
                 // ignore network errors silently
-                // console.error('Unread fetch', e);
             }
         }
+
+        // expose a global refresh so other pages can call it immediately
+        window.refreshUnreadCount = fetchUnread;
 
         // click action: open chat list or go to login
         chatFab.addEventListener('click', function () {
@@ -289,14 +253,29 @@
                 window.location = 'login.php';
                 return;
             }
-            // open chat list
             window.location = 'chat.php';
         });
 
-        // start polling only if logged in (cheap fallback: still hits endpoint which returns not_logged)
+        // start polling only if logged in
         if (isLogged) {
             fetchUnread();
             setInterval(fetchUnread, 6000);
+        }
+
+        // Theme toggle (global): persist preference and apply class to body
+        if (siteToggle) {
+            function applyTheme(dark) {
+                if (dark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode');
+                siteToggle.textContent = dark ? '☀️' : '🌙';
+            }
+            const pref = localStorage.getItem('site_dark_mode');
+            const isDark = pref === '1';
+            applyTheme(isDark);
+            siteToggle.addEventListener('click', function () {
+                const now = document.body.classList.toggle('dark-mode');
+                localStorage.setItem('site_dark_mode', now ? '1' : '0');
+                applyTheme(now);
+            });
         }
     })();
 </script>

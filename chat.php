@@ -37,12 +37,26 @@ foreach ($convs as $c) {
         $p = $conexao->prepare('SELECT idProdutos, Nome FROM produtos WHERE idProdutos = :pid');
         $p->execute([':pid' => $c['produto_id']]);
         $produto = $p->fetch(PDO::FETCH_ASSOC);
+        // try to get a thumbnail for this product
+        $img = $conexao->prepare('SELECT ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos = :pid LIMIT 1');
+        $img->execute([':pid' => $c['produto_id']]);
+        $imgRow = $img->fetch(PDO::FETCH_ASSOC);
+        $thumb = 'images/no-image.png';
+        if ($imgRow && !empty($imgRow['ImagemUrl'])) {
+            $d = $imgRow['ImagemUrl'];
+            if (is_string($d) && (strpos($d, 'data:') === 0 || strpos($d, 'uploads/') === 0 || strpos($d, 'images/') === 0 || strpos($d, 'http') === 0)) {
+                $thumb = $d;
+            } else {
+                // assume binary blob
+                $thumb = 'data:image/jpeg;base64,' . base64_encode($d);
+            }
+        }
     }
     $otherId = ($last['DeUsuarios_idUsuarios'] == $me) ? (int) $last['ParaUsuarios_idUsuarios'] : (int) $last['DeUsuarios_idUsuarios'];
     $ou = $conexao->prepare('SELECT idUsuarios, Nome FROM usuarios WHERE idUsuarios = :id');
     $ou->execute([':id' => $otherId]);
     $otherUser = $ou->fetch(PDO::FETCH_ASSOC);
-    $threads[] = ['produto' => $produto, 'other' => $otherUser, 'last' => $last];
+    $threads[] = ['produto' => $produto, 'other' => $otherUser, 'last' => $last, 'thumb' => $thumb ?? 'images/no-image.png'];
 }
 
 ?>
@@ -59,30 +73,75 @@ foreach ($convs as $c) {
 <body>
     <?php include_once __DIR__ . '/includes/header.php'; ?>
     <main class="container my-4">
-        <h3>Conversas</h3>
-        <div class="conversations-list">
-            <?php if (empty($threads)): ?>
-                <p>Você ainda não tem conversas.</p>
-            <?php else: ?>
-                <ul>
-                    <?php foreach ($threads as $t): ?>
-                        <li style="margin-bottom:12px; list-style:none;">
-                            <a
-                                href="chat_thread.php?produto=<?php echo (int) ($t['produto']['idProdutos'] ?? 0); ?>&other=<?php echo (int) ($t['other']['idUsuarios'] ?? 0); ?>">
-                                <strong><?php echo htmlspecialchars($t['other']['Nome'] ?? 'Vendedor'); ?></strong>
-                                <?php if (!empty($t['produto'])): ?>
-                                    <div style="font-size:0.9rem;">Produto: <?php echo htmlspecialchars($t['produto']['Nome']); ?>
+        <div class="chat-shell">
+            <aside class="chat-sidebar">
+                <h4 style="margin-top:2px">Conversas</h4>
+                <div class="conv-search">
+                    <input id="convSearch" class="form-control" placeholder="Pesquisar conversa"
+                        aria-label="Pesquisar conversas">
+                </div>
+
+                <?php if (empty($threads)): ?>
+                    <div class="no-convs">Você ainda não tem conversas.</div>
+                <?php else: ?>
+                    <ul id="convList" class="conv-list">
+                        <?php foreach ($threads as $t): ?>
+                            <?php
+                            $pid = (int) ($t['produto']['idProdutos'] ?? 0);
+                            $otherId = (int) ($t['other']['idUsuarios'] ?? 0);
+                            $link = "chat_thread.php?produto={$pid}&other={$otherId}";
+                            $lastMsg = htmlspecialchars(mb_substr($t['last']['Mensagem'] ?? '', 0, 140));
+                            $time = isset($t['last']['CriadoEm']) ? date('d/m/Y H:i', strtotime($t['last']['CriadoEm'])) : '';
+                            ?>
+                            <li class="conv-item"
+                                data-search="<?php echo htmlspecialchars(strtolower(($t['other']['Nome'] ?? '') . ' ' . ($t['produto']['Nome'] ?? '') . ' ' . ($t['last']['Mensagem'] ?? ''))); ?>"
+                                onclick="location.href='<?php echo $link; ?>'">
+                                <img class="conv-thumb" src="<?php echo htmlspecialchars($t['thumb']); ?>" alt="thumb">
+                                <div class="conv-meta">
+                                    <div style="display:flex;align-items:center;justify-content:space-between">
+                                        <div class="conv-name">
+                                            <?php echo htmlspecialchars($t['other']['Nome'] ?? 'Vendedor'); ?>
+                                        </div>
+                                        <div class="conv-time"><?php echo $time; ?></div>
                                     </div>
-                                <?php endif; ?>
-                                <div style="color:#666; font-size:0.9rem;">Última:
-                                    <?php echo nl2br(htmlspecialchars(mb_substr($t['last']['Mensagem'], 0, 120))); ?></div>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
+                                    <?php if (!empty($t['produto'])): ?>
+                                        <div class="conv-product"><?php echo htmlspecialchars($t['produto']['Nome'] ?? ''); ?></div>
+                                    <?php endif; ?>
+                                    <div class="conv-last"><?php echo $lastMsg; ?></div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </aside>
+
+            <section class="chat-main" id="chatMain">
+                <div style="text-align:center;color:#666;margin-top:40px">
+                    <p style="font-size:1.1rem;font-weight:600">Selecione uma conversa</p>
+                    <p style="max-width:560px;margin:0 auto">Clique em uma conversa à esquerda para ver o histórico e
+                        responder.</p>
+                </div>
+            </section>
         </div>
     </main>
+
+    <script>
+        // client-side search for conversations
+        (function () {
+            const input = document.getElementById('convSearch');
+            const list = document.getElementById('convList');
+            if (!input || !list) return;
+            const items = Array.from(list.querySelectorAll('.conv-item'));
+            input.addEventListener('input', function () {
+                const q = (this.value || '').trim().toLowerCase();
+                if (q === '') { items.forEach(i => i.style.display = 'flex'); return; }
+                items.forEach(i => {
+                    const s = i.getAttribute('data-search') || '';
+                    i.style.display = s.indexOf(q) !== -1 ? 'flex' : 'none';
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>

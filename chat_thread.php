@@ -40,56 +40,49 @@ if ($produto) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link href="styles/styles.css" rel="stylesheet">
     <title>Chat - <?php echo htmlspecialchars($produtoRow['Nome'] ?? 'Conversa'); ?></title>
-    <style>
-        .chat-window {
-            border: 1px solid #ddd;
-            height: 60vh;
-            overflow: auto;
-            padding: 12px;
-            background: #fff;
-        }
-
-        .msg {
-            margin-bottom: 8px;
-        }
-
-        .msg.me {
-            text-align: right;
-        }
-
-        .msg .bubble {
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 12px;
-            max-width: 70%;
-        }
-
-        .msg.me .bubble {
-            background: #d1ffd6;
-        }
-
-        .msg.them .bubble {
-            background: #eee;
-        }
-
-        .send-box {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-    </style>
 </head>
 
 <body>
     <?php include_once __DIR__ . '/includes/header.php'; ?>
-    <main class="container my-4">
-        <h4><?php echo htmlspecialchars($produtoRow['Nome'] ?? 'Conversa'); ?></h4>
-        <div id="chatWindow" class="chat-window" aria-live="polite">
-            <p>Carregando mensagens...</p>
+    <main class="container my-4 chat-container">
+        <div class="chat-header">
+            <?php
+            // get product thumb
+            $prodThumb = 'images/no-image.png';
+            if ($produtoRow) {
+                $qimg = $conexao->prepare('SELECT ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos = :pid LIMIT 1');
+                $qimg->execute([':pid' => $produtoRow['idProdutos']]);
+                $ir = $qimg->fetch(PDO::FETCH_ASSOC);
+                if ($ir && !empty($ir['ImagemUrl'])) {
+                    $d = $ir['ImagemUrl'];
+                    if (is_string($d) && (strpos($d, 'data:') === 0 || strpos($d, 'uploads/') === 0 || strpos($d, 'images/') === 0 || strpos($d, 'http') === 0)) {
+                        $prodThumb = $d;
+                    } else {
+                        $prodThumb = 'data:image/jpeg;base64,' . base64_encode($d);
+                    }
+                }
+            }
+            ?>
+            <button id="backToChats" class="chat-back-btn" title="Voltar" aria-label="Voltar para conversas"
+                onclick="location.href='chat.php'">&#8592;</button>
+            <img src="<?php echo htmlspecialchars($prodThumb); ?>" alt="produto" class="chat-product-thumb">
+            <div>
+                <div class="chat-head-title"><?php echo htmlspecialchars($produtoRow['Nome'] ?? 'Conversa'); ?></div>
+                <div class="text-muted small">
+                    <?php echo htmlspecialchars($t = ($produtoRow ? 'Discussões sobre este produto' : 'Conversa')); ?>
+                </div>
+            </div>
         </div>
-        <div class="send-box">
-            <input id="msgInput" type="text" class="form-control" placeholder="Digite sua mensagem..." />
-            <button id="sendBtn" class="btn btn-primary">Enviar</button>
+
+        <div id="chatWindow" class="chat-window" aria-live="polite">
+            <!-- messages appended here -->
+        </div>
+
+        <div class="send-area">
+            <div class="send-box">
+                <textarea id="msgInput" placeholder="Digite sua mensagem..."></textarea>
+                <button id="sendBtn">Enviar</button>
+            </div>
         </div>
     </main>
 
@@ -106,7 +99,18 @@ if ($produto) {
             const div = document.createElement('div');
             div.className = 'msg ' + (parseInt(m.DeUsuarios_idUsuarios) === meId ? 'me' : 'them');
             const bubble = document.createElement('div'); bubble.className = 'bubble';
-            bubble.textContent = m.Mensagem;
+            // message text
+            const text = document.createElement('div'); text.textContent = m.Mensagem;
+            bubble.appendChild(text);
+            // timestamp meta (if available)
+            if (m.CriadoEm) {
+                const meta = document.createElement('div'); meta.className = 'meta';
+                try {
+                    const d = new Date(m.CriadoEm);
+                    meta.textContent = d.toLocaleString();
+                } catch (e) { meta.textContent = m.CriadoEm; }
+                bubble.appendChild(meta);
+            }
             div.appendChild(bubble);
             return div;
         }
@@ -118,14 +122,20 @@ if ($produto) {
             fetch(url).then(r => r.json()).then(j => {
                 if (!j.ok) return;
                 const msgs = j.messages || [];
-                msgs.forEach(m => {
-                    chatWindow.appendChild(renderMessage(m));
-                    lastId = Math.max(lastId, parseInt(m.id));
-                });
                 if (msgs.length) {
+                    // append and scroll
+                    msgs.forEach(m => {
+                        chatWindow.appendChild(renderMessage(m));
+                        lastId = Math.max(lastId, parseInt(m.id));
+                    });
                     scrollToBottom();
                     // mark messages as read for messages we just received
                     markRead();
+                } else {
+                    // if no messages and first load, show empty state
+                    if (lastId === 0 && chatWindow.children.length === 0) {
+                        chatWindow.innerHTML = '<div class="empty-state">Nenhuma mensagem ainda. Diga olá!</div>';
+                    }
                 }
             }).catch(e => console.error(e));
         }
@@ -137,12 +147,15 @@ if ($produto) {
                 fd.append('produto_id', produtoId);
                 fd.append('other_user_id', otherId);
                 fetch('mark_read.php', { method: 'POST', body: fd }).then(r => r.json()).then(j => {
-                    // optional: update unread badge by reloading unread count via header polling
+                    // update unread badge immediately if header exposes a refresh function
+                    try { if (window.refreshUnreadCount) window.refreshUnreadCount(); } catch (ex) { }
                 }).catch(e => { /* ignore */ });
             } catch (e) { }
         }
 
-        sendBtn.addEventListener('click', function () {
+        sendBtn.addEventListener('click', sendMessage);
+
+        function sendMessage() {
             const text = msgInput.value.trim();
             if (!text) return;
             const fd = new FormData();
@@ -151,6 +164,8 @@ if ($produto) {
             fd.append('mensagem', text);
             fetch('send_message.php', { method: 'POST', body: fd }).then(r => r.json()).then(j => {
                 if (j.ok && j.message) {
+                    // if we had an empty-state, clear it
+                    if (chatWindow.querySelector('.empty-state')) chatWindow.innerHTML = '';
                     chatWindow.appendChild(renderMessage(j.message));
                     lastId = Math.max(lastId, parseInt(j.message.id));
                     msgInput.value = '';
@@ -159,7 +174,7 @@ if ($produto) {
                     alert('Erro ao enviar: ' + (j.error || ''));
                 }
             }).catch(e => { console.error(e); alert('Erro ao enviar.'); });
-        });
+        }
 
         // polling
         setInterval(fetchMessages, 2000);
@@ -168,8 +183,15 @@ if ($produto) {
         // ensure we mark read any existing messages once after first render
         setTimeout(markRead, 500);
 
-        // send on enter
-        msgInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); } });
+        // send on Enter (Shift+Enter -> newline)
+        msgInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // When marking messages read, notify header to refresh unread badge if available
     </script>
 </body>
 
