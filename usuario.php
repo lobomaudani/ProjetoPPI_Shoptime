@@ -13,7 +13,7 @@ $tipo_mensagem = null;
 $userId = $_SESSION['id'];
 
 // carregar usuário e endereços
-$stmt = $conexao->prepare('SELECT idUsuarios, nome, email, DataNascimento, ImagemUrl FROM usuarios WHERE idUsuarios = :id LIMIT 1');
+$stmt = $conexao->prepare('SELECT idUsuarios, nome, email, DataNascimento FROM usuarios WHERE idUsuarios = :id LIMIT 1');
 $stmt->execute([':id' => $userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -51,12 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
             // proceed with deletion
             // collect file paths to remove after DB deletion
             $filesToRemove = [];
-            if (!empty($user['ImagemUrl']) && is_string($user['ImagemUrl']) && strpos($user['ImagemUrl'], 'uploads/') === 0) {
-                $filesToRemove[] = __DIR__ . '/' . $user['ImagemUrl'];
-                // also try thumbnail variant (_thumb)
-                $thumbPath = preg_replace('/(\.[^.]+)$/', '_thumb$1', __DIR__ . '/' . $user['ImagemUrl']);
-                $filesToRemove[] = $thumbPath;
-            }
 
             // collect product image paths
             try {
@@ -129,21 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensagem = 'Você deve ter ao menos 16 anos.';
             $tipo_mensagem = 'error';
         } else {
-            // foto opcional
-            $imagemUrl = $user['ImagemUrl'];
-            if (!empty($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-                try {
-                    $saved = save_profile_photo($_FILES['profile_photo'], 2 * 1024 * 1024);
-                    $imagemUrl = $saved['url'];
-                } catch (Exception $ex) {
-                    $mensagem = $ex->getMessage();
-                    $tipo_mensagem = 'error';
-                }
-            }
-
-            // atualizar usuário
-            $up = $conexao->prepare('UPDATE usuarios SET nome = :nome, DataNascimento = :nasc, ImagemUrl = :img WHERE idUsuarios = :id');
-            $up->execute([':nome' => $nome, ':nasc' => $dataNascimento, ':img' => $imagemUrl, ':id' => $userId]);
+            // atualizar usuário (sem foto de perfil)
+            $up = $conexao->prepare('UPDATE usuarios SET nome = :nome, DataNascimento = :nasc WHERE idUsuarios = :id');
+            $up->execute([':nome' => $nome, ':nasc' => $dataNascimento, ':id' => $userId]);
 
             // endereços: simplificar - apagar os atuais e inserir os enviados (até 3)
             $del = $conexao->prepare('DELETE FROM enderecos WHERE Usuarios_idUsuarios = :id');
@@ -222,14 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input class="form-control" type="date" name="data_nascimento"
                                 value="<?php echo htmlspecialchars($user['DataNascimento']); ?>">
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Foto de Perfil</label>
-                            <?php if (!empty($user['ImagemUrl'])): ?>
-                                <div class="mb-2"><img src="<?php echo htmlspecialchars($user['ImagemUrl']); ?>"
-                                        alt="profile" width="120"></div>
-                            <?php endif; ?>
-                            <input type="file" name="profile_photo" accept="image/*" class="form-control">
-                        </div>
+                        <!-- Foto de perfil removida do formulário -->
                         <div class="mb-3">
                             <label class="form-label">Endereços (até 3)</label>
                             <div class="accordion" id="addressesAccordion">

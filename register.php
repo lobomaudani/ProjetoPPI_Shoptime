@@ -75,32 +75,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $autorizadoInsercao = false;
                 }
 
-                // tratar upload de foto de perfil (opcional) com helper (limite 2MB)
-                $imagemUrl = null;
-                if ($autorizadoInsercao && !empty($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-                    try {
-                        $saved = save_profile_photo($_FILES['profile_photo'], 2 * 1024 * 1024);
-                        $imagemUrl = $saved['url'];
-                    } catch (Exception $ex) {
-                        $autorizadoInsercao = false;
-                        $tipo_mensagem = 'error';
-                        $error = $ex->getMessage();
-                    }
-                }
+                // Profile photo removed: no longer handled or stored
 
                 // Hash da senha (recomendado) antes de salvar
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-                // Inserir usuário (inclui DataNascimento e ImagemUrl se houver)
-                $stmt = $conexao->prepare("INSERT INTO usuarios (nome, cpf, email, senha, DataNascimento, ImagemUrl, Cargos_idCargos)
-                                                    VALUES (:nome, :cpf, :email, :senha, :nasc, :img, :cargo)");
+                // Inserir usuário (DataNascimento) — sem foto de perfil
+                $stmt = $conexao->prepare("INSERT INTO usuarios (nome, cpf, email, senha, DataNascimento, Cargos_idCargos)
+                                                    VALUES (:nome, :cpf, :email, :senha, :nasc, :cargo)");
                 $stmt->execute([
                     ':nome' => $nomeUsuario,
                     ':cpf' => $cpf,
                     ':email' => $email,
                     ':senha' => $passwordHash,
                     ':nasc' => $dataNascimento,
-                    ':img' => $imagemUrl,
                     ':cargo' => $idCargo
                 ]);
 
@@ -208,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     <?php endif; ?>
 
-                    <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST" enctype="multipart/form-data">
+                    <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
                         <div class="mb-3">
                             <label for="username" class="form-label">Nome Completo:</label>
                             <input type="text" class="form-control" id="username" name="username" required>
@@ -223,11 +211,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 required>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="profile_photo" class="form-label">Foto de Perfil (opcional):</label>
-                            <input type="file" class="form-control" id="profile_photo" name="profile_photo"
-                                accept="image/*">
-                        </div>
                         <!-- Endereços: accordion collapsible (até 3) -->
                         <div class="mb-3">
                             <label class="form-label">Endereço (até 3) — preencha ao menos Rua ou CEP para cadastrar
