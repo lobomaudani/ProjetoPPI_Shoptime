@@ -17,7 +17,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['unfav_id'])) {
     exit;
 }
 
-$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco, e.idEnderecoImagem AS imagem_id, u.Nome AS Vendedor
+// detect discount columns to include in select
+$prodCols = [];
+try {
+    $colRows = $conexao->query("DESCRIBE produtos")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($colRows as $cr)
+        $prodCols[] = $cr['Field'];
+} catch (Exception $e) {
+    $prodCols = [];
+}
+
+$selectExtras = '';
+if (in_array('Desconto', $prodCols))
+    $selectExtras .= ', p.Desconto';
+if (in_array('desconto', $prodCols))
+    $selectExtras .= ', p.desconto';
+if (in_array('TemDesconto', $prodCols))
+    $selectExtras .= ', p.TemDesconto';
+if (in_array('tem_desconto', $prodCols))
+    $selectExtras .= ', p.tem_desconto';
+if (in_array('quantidade_desc', $prodCols))
+    $selectExtras .= ', p.quantidade_desc';
+
+$stmt = $conexao->prepare('SELECT p.idProdutos, p.Nome, p.Preco' . $selectExtras . ', e.idEnderecoImagem AS imagem_id, u.Nome AS Vendedor
     FROM favoritos f
     JOIN produtos p ON p.idProdutos = f.Produtos_idProdutos
     LEFT JOIN (
@@ -76,7 +98,38 @@ function e($s)
 
                             <div>
                                 <h5 class="mb-1 small"><?php echo e($it['Nome']); ?></h5>
-                                <p class="mb-1 text-muted">R$ <?php echo number_format($it['Preco'], 2, ',', '.'); ?></p>
+                                <?php
+                                $orig = isset($it['Preco']) ? (float) $it['Preco'] : null;
+                                $disc = null;
+                                $hasDisc = false;
+                                if (isset($it['Desconto']) && $it['Desconto'] !== null && $it['Desconto'] !== '')
+                                    $disc = (float) $it['Desconto'];
+                                if (isset($it['desconto']) && $it['desconto'] !== null && $it['desconto'] !== '')
+                                    $disc = $disc ?? (float) $it['desconto'];
+                                if (isset($it['TemDesconto']) && $it['TemDesconto'])
+                                    $hasDisc = true;
+                                if (isset($it['tem_desconto']) && $it['tem_desconto'])
+                                    $hasDisc = true;
+                                if ($disc !== null && $disc > 0)
+                                    $hasDisc = true;
+                                $discountedPrice = null;
+                                if ($hasDisc && $orig !== null && $disc !== null) {
+                                    $discountedPrice = round($orig * (1 - ($disc / 100)), 2);
+                                    if ($discountedPrice < 0)
+                                        $discountedPrice = 0.0;
+                                }
+                                ?>
+                                <?php if ($hasDisc && $discountedPrice !== null): ?>
+                                    <p class="mb-1 text-muted"><span style="text-decoration:line-through;">R$
+                                            <?php echo number_format($orig, 2, ',', '.'); ?></span>
+                                        &nbsp;<strong class="text-danger">R$
+                                            <?php echo number_format($discountedPrice, 2, ',', '.'); ?></strong>
+                                    <div class="small text-success">Economize
+                                        <?php echo htmlspecialchars(number_format($disc, 2, ',', '.')); ?>%</div>
+                                    </p>
+                                <?php else: ?>
+                                    <p class="mb-1 text-muted">R$ <?php echo number_format($it['Preco'], 2, ',', '.'); ?></p>
+                                <?php endif; ?>
                                 <p class="mb-0 small text-muted">Vendedor: <?php echo e($it['Vendedor']); ?></p>
                             </div>
                         </a>

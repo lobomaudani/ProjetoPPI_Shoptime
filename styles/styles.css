@@ -18,6 +18,12 @@ body {
     color: #333;
 }
 
+/* Prevent tiny horizontal overflow that can show artifacts at the page edge */
+html,
+body {
+    overflow-x: hidden;
+}
+
 header {
     background: #ff4553;
     padding: 10px 20px;
@@ -25,7 +31,6 @@ header {
     border-bottom: 1px solid #ad4048;
 }
 
-/* Inner wrapper: center the logo, search and actions as a group */
 .header-inner {
     max-width: 1100px;
     margin: 0 auto;
@@ -168,7 +173,7 @@ nav a:hover {
 
 .nav-categories button,
 .nav-categories select {
-    margin-left: 30px;
+    margin-left: 10px;
     padding: 6px 12px;
     border: none;
     background: #c1121f;
@@ -503,5 +508,111 @@ textarea.form-control {
     .header-inner img {
         max-width: 140px;
         height: auto;
+    }
+}
+
+/* Product page gallery & thumbnail strip (moved from produto.php) */
+.gallery-main-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.img-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+}
+
+.img-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.img-nav-prev {
+    left: 8px;
+}
+
+.img-nav-next {
+    right: 8px;
+}
+
+.thumb-strip-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.thumb-strip-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+}
+
+.thumb-strip {
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+    max-width: 392px;
+    width: 100%;
+}
+
+.thumb-item {
+    flex: 0 0 auto;
+}
+
+.thumb-item img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.thumb-item img.active {
+    border-color: #c1121f;
+}
+
+/* show grabbing cursor while dragging the thumbnail strip */
+.thumb-strip.dragging {
+    cursor: grabbing;
+}
+
+/* hide native scrollbar for cleaner look */
+.thumb-strip {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.thumb-strip::-webkit-scrollbar {
+    display: none;
+}
+
+/* responsive: reduce thumbnail sizes on small screens */
+@media (max-width: 576px) {
+    .thumb-item img {
+        width: 56px;
+        height: 56px;
+    }
+
+    .thumb-strip {
+        max-width: 280px;
     }
 }

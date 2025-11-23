@@ -50,11 +50,14 @@ CREATE TABLE IF NOT EXISTS `produtos` (
   `Categorias_idCategorias` int NOT NULL,
   `Marca` varchar(100) DEFAULT NULL,
   `FavoritosCount` int NOT NULL DEFAULT 0,
-  `tem_desconto` boolean default false,
-  `quantidade_desc` int,
+  `TemDesconto` boolean DEFAULT false,
+  `Desconto` decimal(5,2) DEFAULT NULL,
+  `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`idProdutos`),
   KEY `fk_Produtos_Usuarios1_idx` (`Usuarios_idUsuarios`),
   KEY `fk_Produtos_Categorias1_idx` (`Categorias_idCategorias`),
+  KEY `idx_produtos_favoritos` (`FavoritosCount`),
+  KEY `idx_produtos_createdat` (`CreatedAt`),
   INDEX idx_nome_categoria (Nome(100), Categorias_idCategorias)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -118,6 +121,17 @@ CREATE TABLE IF NOT EXISTS `favoritos` (
   KEY `fk_Favoritos_Produtos_idx` (`Produtos_idProdutos`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- visitas: armazena visualizações de produto por usuário (útil para recomendações)
+CREATE TABLE IF NOT EXISTS `visitas` (
+  `idVisita` int NOT NULL AUTO_INCREMENT,
+  `Usuarios_idUsuarios` int DEFAULT NULL,
+  `Produtos_idProdutos` int NOT NULL,
+  `Data` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`idVisita`),
+  KEY `idx_visitas_usuario` (`Usuarios_idUsuarios`),
+  KEY `idx_visitas_produto` (`Produtos_idProdutos`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- triggers (notes: create triggers manually if your client requires DELIMITER blocks)
 DELIMITER $$
 CREATE TRIGGER trg_favoritos_after_insert
@@ -158,5 +172,7 @@ ALTER TABLE itenscompras ADD CONSTRAINT IF NOT EXISTS fk_ItensCompras_Compras1 F
 ALTER TABLE itenscompras ADD CONSTRAINT IF NOT EXISTS fk_ItensCompras_Produtos1 FOREIGN KEY (Produtos_idProdutos) REFERENCES produtos (idProdutos) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE favoritos ADD CONSTRAINT IF NOT EXISTS fk_Favoritos_Usuarios FOREIGN KEY (Usuarios_idUsuarios) REFERENCES usuarios (idUsuarios) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE favoritos ADD CONSTRAINT IF NOT EXISTS fk_Favoritos_Produtos FOREIGN KEY (Produtos_idProdutos) REFERENCES produtos (idProdutos) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE visitas ADD CONSTRAINT IF NOT EXISTS fk_Visitas_Usuarios FOREIGN KEY (Usuarios_idUsuarios) REFERENCES usuarios (idUsuarios) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE visitas ADD CONSTRAINT IF NOT EXISTS fk_Visitas_Produtos FOREIGN KEY (Produtos_idProdutos) REFERENCES produtos (idProdutos) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- End of schema

@@ -8,6 +8,12 @@ $mensagem_status = '';
 $tipo_mensagem = '';
 $imagensSalvas = [];
 
+// máximo de imagens por produto (centralizado)
+$MAX_IMAGES = 10;
+
+// máximo de desconto permitido (percentual)
+$MAX_DISCOUNT = 90;
+
 // novo: estado do campo desconto (mantém valores entre requisições)
 $tem_desconto = '0'; // '1' = sim, '0' = não
 $desconto = '';
@@ -87,12 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // aceitar vírgula e ponto como separador decimal
         $desconto_raw = str_replace(',', '.', $desconto);
         if ($desconto_raw === '' || !is_numeric($desconto_raw)) {
-            $mensagem_status = 'Informe um valor de desconto válido (0-60).';
+            $mensagem_status = 'Informe um valor de desconto válido (0-' . $MAX_DISCOUNT . ').';
             $tipo_mensagem = 'danger';
         } else {
             $dval = (float) $desconto_raw;
-            if ($dval < 0 || $dval > 60) {
-                $mensagem_status = 'O desconto deve estar entre 0 e 60%.';
+            if ($dval < 0 || $dval > $MAX_DISCOUNT) {
+                $mensagem_status = 'O desconto deve estar entre 0 e ' . $MAX_DISCOUNT . '%.';
                 $tipo_mensagem = 'danger';
             } else {
                 // normalizar formato para exibição/validação adicional
@@ -118,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($files['name'] as $n)
                 if ($n !== '')
                     $countFiles++;
-            if ($countFiles > 10) {
-                $mensagem_status = 'Você pode enviar no máximo 10 arquivos.';
+            if ($countFiles > $MAX_IMAGES) {
+                $mensagem_status = 'Você pode enviar no máximo ' . $MAX_IMAGES . ' arquivos.';
                 $tipo_mensagem = 'danger';
             } else {
                 $maxSizePerFile = 5 * 1024 * 1024;
@@ -157,6 +163,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // server-side: ensure existing images (when editing) + new uploads do not exceed limit
+        if ($tipo_mensagem !== 'danger' && $editId > 0) {
+            try {
+                $cntStmt = $conexao->prepare('SELECT COUNT(*) FROM enderecoimagem WHERE Produtos_idProdutos = :pid');
+                $cntStmt->execute([':pid' => $editId]);
+                $existingCount = (int) $cntStmt->fetchColumn();
+            } catch (Exception $e) {
+                $existingCount = 0;
+            }
+            if ($existingCount + count($imagensSalvas) > $MAX_IMAGES) {
+                $mensagem_status = 'O total de imagens por produto não pode exceder ' . $MAX_IMAGES . '. Remova algumas imagens existentes ou envie menos arquivos.';
+                $tipo_mensagem = 'danger';
+            }
+        }
+
         if ($tipo_mensagem !== 'danger') {
             if (empty($_SESSION['id'])) {
                 $mensagem_status = 'Você precisa estar logado para cadastrar produtos.';
@@ -168,8 +189,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($editId > 0) {
                         // update existing product (only owner allowed; already checked when loading)
                         $upd = $conexao->prepare('UPDATE produtos
-                            SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca
-                            WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
+                                SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca, TemDesconto = :tem_desconto, Desconto = :desconto
+                                WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
                         $upd->execute([
                             ':nome' => $nome,
                             ':desc' => $descricao,
@@ -177,14 +198,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':quant' => ($unidades === '' ? null : (int) $unidades),
                             ':cat' => (int) $categoria,
                             ':marca' => ($marca === '' ? null : $marca),
+                            ':tem_desconto' => ($tem_desconto === '1' ? 1 : 0),
+                            ':desconto' => ($desconto === '' ? null : $desconto),
                             ':id' => $editId,
                             ':uid' => $userId
                         ]);
 
                         $prodId = $editId;
                     } else {
-                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca)
-                                VALUES (:uid, :nome, :desc, :preco, :quantidade, :avaliacao, :categoria, :marca)";
+                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca, TemDesconto, Desconto)
+                                VALUES (:uid, :nome, :desc, :preco, :quantidade, :avaliacao, :categoria, :marca, :tem_desconto, :desconto)";
                         $ins = $conexao->prepare($sql);
                         $ins->execute([
                             ':uid' => $userId,
@@ -194,7 +217,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':quantidade' => ($unidades === '' ? null : (int) $unidades),
                             ':avaliacao' => null,
                             ':categoria' => (int) $categoria,
-                            ':marca' => ($marca === '' ? null : $marca)
+                            ':marca' => ($marca === '' ? null : $marca),
+                            ':tem_desconto' => ($tem_desconto === '1' ? 1 : 0),
+                            ':desconto' => ($desconto === '' ? null : $desconto)
                         ]);
                         $prodId = $conexao->lastInsertId();
                     }
@@ -373,29 +398,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <label class="form-label">Tem desconto?</label>
                                     <div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="tem_desconto" id="descontoNao" value="0" <?php echo ($tem_desconto === '1') ? '' : 'checked'; ?>>
+                                            <input class="form-check-input" type="radio" name="tem_desconto"
+                                                id="descontoNao" value="0" <?php echo ($tem_desconto === '1') ? '' : 'checked'; ?>>
                                             <label class="form-check-label" for="descontoNao">Não</label>
                                         </div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="tem_desconto" id="descontoSim" value="1" <?php echo ($tem_desconto === '1') ? 'checked' : ''; ?>>
+                                            <input class="form-check-input" type="radio" name="tem_desconto"
+                                                id="descontoSim" value="1" <?php echo ($tem_desconto === '1') ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="descontoSim">Sim</label>
                                         </div>
                                     </div>
 
-                                    <div class="mt-2" id="descontoBox" style="display: <?php echo ($tem_desconto === '1' ? 'block' : 'none'); ?>;">
-                                        <label class="form-label">Valor do desconto (%)</label>
-                                        <input class="form-control" type="number" name="desconto" id="descontoInput" min="0" max="60" step="0.01" placeholder="0 - 60" value="<?php echo htmlspecialchars($desconto); ?>">
-                                        <div class="form-text">Limite máximo de desconto: 60%</div>
+                                    <div class="mt-2" id="descontoBox"
+                                        style="display: <?php echo ($tem_desconto === '1' ? 'block' : 'none'); ?>;">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-auto">
+                                                <label class="form-label mb-0">Valor do desconto (%)</label>
+                                            </div>
+                                            <div class="col">
+                                                <input class="form-control" type="number" name="desconto" id="descontoInput"
+                                                    min="0" max="<?php echo (int) $MAX_DISCOUNT; ?>" step="0.01"
+                                                    placeholder="0 - <?php echo (int) $MAX_DISCOUNT; ?>"
+                                                    value="<?php echo htmlspecialchars($desconto); ?>">
+                                            </div>
+                                            <div class="col-auto">
+                                                <div class="form-text mb-0">Limite máximo:
+                                                    <?php echo (int) $MAX_DISCOUNT; ?>%</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="row g-3 mt-2">
                                 <div class="col-md-12">
-                                    <label class="form-label">Imagens (até 10 arquivos)</label>
+                                    <label class="form-label">Imagens (até <?php echo htmlspecialchars($MAX_IMAGES); ?>
+                                        arquivos)</label>
                                     <input class="form-control" type="file" name="imagens[]" id="imagensInput"
                                         accept="image/*" multiple>
                                     <div class="form-text">PNG, JPG, GIF, WEBP — até 5MB por imagem
                                     </div>
+                                    <div class="form-text mt-1"><strong><span id="imageCounter">0</span> /
+                                            <?php echo htmlspecialchars($MAX_IMAGES); ?></strong> imagens selecionadas
+                                        (inclui imagens já existentes)</div>
                                 </div>
                             </div>
                             <div class="mt-3" id="previewArea">
@@ -438,7 +482,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const input = document.getElementById('imagensInput');
             const previewGrid = document.getElementById('previewGrid');
             const form = document.getElementById('produtoForm');
-            const MAX_FILES = 10; const MAX_SIZE = 5 * 1024 * 1024;
+            const MAX_FILES = <?php echo (int) $MAX_IMAGES; ?>; const MAX_SIZE = 5 * 1024 * 1024;
+            const MAX_DISCOUNT = <?php echo (int) $MAX_DISCOUNT; ?>;
+            const imageCounter = document.getElementById('imageCounter');
+            const submitBtn = document.getElementById('btnSalvar');
             // DataTransfer-based incremental selection
             const dt = new DataTransfer();
 
@@ -459,6 +506,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 input.files = dt.files;
             }
 
+            function updateCounterAndSubmitState() {
+                const existingCount = document.querySelectorAll('.existing-item').length;
+                const total = existingCount + dt.files.length;
+                if (imageCounter) imageCounter.textContent = total;
+                if (submitBtn) submitBtn.disabled = (total === 0 || total > MAX_FILES);
+            }
+
             function removeFileAt(index) {
                 const tmp = new DataTransfer();
                 for (let i = 0; i < dt.files.length; i++) if (i !== index) tmp.items.add(dt.files[i]);
@@ -471,13 +525,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (input) {
                 input.addEventListener('change', function (e) {
                     const files = Array.from(e.target.files || []);
-                    if (dt.files.length + files.length > MAX_FILES) { alert('Selecione no máximo ' + MAX_FILES + ' imagens.'); input.value = ''; return; }
+                    const existingCountNow = document.querySelectorAll('.existing-item').length;
+                    if (existingCountNow + dt.files.length + files.length > MAX_FILES) { alert('Selecione no máximo ' + MAX_FILES + ' imagens (incluindo imagens já existentes).'); input.value = ''; return; }
                     for (const f of files) {
                         if (!f.type.startsWith('image/')) { alert('Apenas imagens são permitidas: ' + f.name); continue; }
                         if (f.size > MAX_SIZE) { alert('Imagem muito grande (max 5MB): ' + f.name); continue; }
                         dt.items.add(f);
                     }
                     renderPreviews();
+                    updateCounterAndSubmitState();
                 });
             }
 
@@ -497,6 +553,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }).then(function (resp) { return resp.json(); }).then(function (json) {
                             if (json && json.success) {
                                 wrapper.parentNode.removeChild(wrapper);
+                                updateCounterAndSubmitState();
                             } else {
                                 alert('Erro ao remover imagem: ' + (json && json.error ? json.error : 'erro desconhecido'));
                             }
@@ -509,6 +566,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             initExistingRemovalButtons();
+            // initialize counter state based on existing images
+            if (typeof updateCounterAndSubmitState === 'function') updateCounterAndSubmitState();
 
             // novo: toggle e validação cliente para desconto
             const descontoNao = document.getElementById('descontoNao');
@@ -534,13 +593,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!categoria) { e.preventDefault(); alert('Por favor selecione uma categoria para o produto.'); return; }
                     const existingCount = document.querySelectorAll('.existing-item').length;
                     if (existingCount + dt.files.length === 0) { e.preventDefault(); alert('Envie ao menos uma imagem para o produto.'); return; }
+                    if (existingCount + dt.files.length > MAX_FILES) { e.preventDefault(); alert('O total de imagens por produto não pode exceder ' + MAX_FILES + '. Remova algumas imagens existentes ou reduza as novas seleções.'); return; }
 
                     // validação do desconto no cliente
                     if (descontoSim && descontoSim.checked) {
                         const dvalRaw = descontoInput ? descontoInput.value.trim() : '';
-                        if (dvalRaw === '' || isNaN(dvalRaw)) { e.preventDefault(); alert('Informe um valor de desconto válido (0-60).'); return; }
+                        if (dvalRaw === '' || isNaN(dvalRaw)) { e.preventDefault(); alert('Informe um valor de desconto válido (0-' + MAX_DISCOUNT + ').'); return; }
                         const dv = Number(dvalRaw);
-                        if (dv < 0 || dv > 60) { e.preventDefault(); alert('O desconto deve estar entre 0 e 60%.'); return; }
+                        if (dv < 0 || dv > MAX_DISCOUNT) { e.preventDefault(); alert('O desconto deve estar entre 0 e ' + MAX_DISCOUNT + '%.'); return; }
                     }
                     // attach dt.files to input já é feito em renderPreviews
                 });
