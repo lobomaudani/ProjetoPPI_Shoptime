@@ -1,5 +1,8 @@
 <?php
 session_start();
+
+// Avoid printing deprecation/notice messages into the HTML (they were showing up inside form fields)
+// You can remove or adjust this in development if you want to see notices again.
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 include_once "connections/conectarBD.php";
@@ -7,10 +10,6 @@ include_once __DIR__ . '/includes/user_helpers.php';
 $mensagem_status = '';
 $tipo_mensagem = '';
 $imagensSalvas = [];
-
-// novo: estado do campo desconto (mantém valores entre requisições)
-$tem_desconto = '0'; // '1' = sim, '0' = não
-$desconto = '';
 
 // Edit mode: if id provided, load product and images for editing
 $editId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -31,20 +30,6 @@ if ($editId > 0) {
             header('Location: meusProdutos.php');
             exit;
         }
-
-        // preencher estado do desconto se tabela tiver coluna relevante
-        if (is_array($editingProduct)) {
-            if (array_key_exists('TemDesconto', $editingProduct)) {
-                $tem_desconto = ($editingProduct['TemDesconto'] ? '1' : '0');
-            } elseif (array_key_exists('Desconto', $editingProduct) && $editingProduct['Desconto'] !== null && $editingProduct['Desconto'] !== '') {
-                // se existe apenas o valor do desconto, marcamos como sim
-                $tem_desconto = '1';
-            }
-            if (array_key_exists('Desconto', $editingProduct)) {
-                $desconto = $editingProduct['Desconto'];
-            }
-        }
-
         $imgq = $conexao->prepare('SELECT idEnderecoImagem, ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos = :pid');
         $imgq->execute([':pid' => $editId]);
         $existingImages = $imgq->fetchAll(PDO::FETCH_ASSOC);
@@ -79,30 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $unidades = htmlspecialchars(trim($_POST['unidades'] ?? ''));
     $categoria = htmlspecialchars(trim($_POST['categoria'] ?? ''));
     $marca = htmlspecialchars(trim($_POST['marca'] ?? ''));
-
-    // novo: ler seleção de desconto e validar (mantém estado do formulário)
-    $tem_desconto = (isset($_POST['tem_desconto']) && ($_POST['tem_desconto'] === '1')) ? '1' : '0';
-    $desconto = trim($_POST['desconto'] ?? '');
-    if ($tem_desconto === '1') {
-        // aceitar vírgula e ponto como separador decimal
-        $desconto_raw = str_replace(',', '.', $desconto);
-        if ($desconto_raw === '' || !is_numeric($desconto_raw)) {
-            $mensagem_status = 'Informe um valor de desconto válido (0-60).';
-            $tipo_mensagem = 'danger';
-        } else {
-            $dval = (float) $desconto_raw;
-            if ($dval < 0 || $dval > 60) {
-                $mensagem_status = 'O desconto deve estar entre 0 e 60%.';
-                $tipo_mensagem = 'danger';
-            } else {
-                // normalizar formato para exibição/validação adicional
-                $desconto = number_format($dval, 2, '.', '');
-            }
-        }
-    } else {
-        // garantir vazio quando não houver desconto
-        $desconto = '';
-    }
 
     if (!$nome || !$descricao || $preco === '' || $unidades === '') {
         $mensagem_status = 'Por favor, preencha os campos obrigatórios corretamente.';
@@ -167,35 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $userId = (int) $_SESSION['id'];
                     if ($editId > 0) {
                         // update existing product (only owner allowed; already checked when loading)
-                        $upd = $conexao->prepare('UPDATE produtos
-                            SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca
-                            WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
-                        $upd->execute([
-                            ':nome' => $nome,
-                            ':desc' => $descricao,
-                            ':preco' => ($preco === '' ? null : $preco),
-                            ':quant' => ($unidades === '' ? null : (int) $unidades),
-                            ':cat' => (int) $categoria,
-                            ':marca' => ($marca === '' ? null : $marca),
-                            ':id' => $editId,
-                            ':uid' => $userId
-                        ]);
+                        $upd = $conexao->prepare('UPDATE produtos SET Nome = :nome, Descricao = :desc, Preco = :preco, Quantidade = :quant, Categorias_idCategorias = :cat, Marca = :marca WHERE idProdutos = :id AND Usuarios_idUsuarios = :uid');
+                        $upd->execute([':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quant' => ($unidades === '' ? null : (int) $unidades), ':cat' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca), ':id' => $editId, ':uid' => $userId]);
 
                         $prodId = $editId;
                     } else {
-                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca)
-                                VALUES (:uid, :nome, :desc, :preco, :quantidade, :avaliacao, :categoria, :marca)";
+                        $sql = "INSERT INTO produtos (Usuarios_idUsuarios, Nome, Descricao, Preco, Quantidade, Avaliacao, Categorias_idCategorias, Marca) VALUES (:uid, :nome, :desc,:preco, :quantidade, :avaliacao, :categoria, :marca)";
                         $ins = $conexao->prepare($sql);
-                        $ins->execute([
-                            ':uid' => $userId,
-                            ':nome' => $nome,
-                            ':desc' => $descricao,
-                            ':preco' => ($preco === '' ? null : $preco),
-                            ':quantidade' => ($unidades === '' ? null : (int) $unidades),
-                            ':avaliacao' => null,
-                            ':categoria' => (int) $categoria,
-                            ':marca' => ($marca === '' ? null : $marca)
-                        ]);
+                        $ins->execute([':uid' => $userId, ':nome' => $nome, ':desc' => $descricao, ':preco' => ($preco === '' ? null : $preco), ':quantidade' => ($unidades === '' ? null : (int) $unidades), ':avaliacao' => null, ':categoria' => (int) $categoria, ':marca' => ($marca === '' ? null : $marca)]);
                         $prodId = $conexao->lastInsertId();
                     }
 
@@ -225,9 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mensagem_status = 'Produto cadastrado com sucesso!';
                     $tipo_mensagem = 'success';
                     $nome = $descricao = $preco = $unidades = $categoria = $marca = '';
-                    // limpar estado do desconto após sucesso
-                    $tem_desconto = '0';
-                    $desconto = '';
                     $imagensSalvas = [];
                 } catch (Exception $e) {
                     if ($conexao->inTransaction())
@@ -239,6 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -366,29 +304,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         value="<?php echo $isEdit ? htmlspecialchars($editingProduct['Marca'] ?? '') : ''; ?>">
                                 </div>
                             </div>
-
-                            <!-- novo bloco: campo de desconto (não altera outros campos existentes) -->
-                            <div class="row g-3 mt-2">
-                                <div class="col-12 mt-3">
-                                    <label class="form-label">Tem desconto?</label>
-                                    <div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="tem_desconto" id="descontoNao" value="0" <?php echo ($tem_desconto === '1') ? '' : 'checked'; ?>>
-                                            <label class="form-check-label" for="descontoNao">Não</label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="tem_desconto" id="descontoSim" value="1" <?php echo ($tem_desconto === '1') ? 'checked' : ''; ?>>
-                                            <label class="form-check-label" for="descontoSim">Sim</label>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-2" id="descontoBox" style="display: <?php echo ($tem_desconto === '1' ? 'block' : 'none'); ?>;">
-                                        <label class="form-label">Valor do desconto (%)</label>
-                                        <input class="form-control" type="number" name="desconto" id="descontoInput" min="0" max="60" step="0.01" placeholder="0 - 60" value="<?php echo htmlspecialchars($desconto); ?>">
-                                        <div class="form-text">Limite máximo de desconto: 60%</div>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="row g-3 mt-2">
                                 <div class="col-md-12">
                                     <label class="form-label">Imagens (até 10 arquivos)</label>
@@ -510,23 +425,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             initExistingRemovalButtons();
 
-            // novo: toggle e validação cliente para desconto
-            const descontoNao = document.getElementById('descontoNao');
-            const descontoSim = document.getElementById('descontoSim');
-            const descontoBox = document.getElementById('descontoBox');
-            const descontoInput = document.getElementById('descontoInput');
-            function toggleDescontoBox() {
-                if (descontoSim && descontoSim.checked) {
-                    descontoBox.style.display = 'block';
-                } else {
-                    descontoBox.style.display = 'none';
-                }
-            }
-            if (descontoNao) descontoNao.addEventListener('change', toggleDescontoBox);
-            if (descontoSim) descontoSim.addEventListener('change', toggleDescontoBox);
-            // inicializa a visibilidade ao carregar
-            toggleDescontoBox();
-
             if (form) {
                 form.addEventListener('submit', function (e) {
                     const nome = form.nome.value.trim(); const descricao = form.descricao.value.trim(); const preco = form.preco.value; const unidades = form.unidades.value; const categoria = (form.categoria ? form.categoria.value : '');
@@ -534,15 +432,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!categoria) { e.preventDefault(); alert('Por favor selecione uma categoria para o produto.'); return; }
                     const existingCount = document.querySelectorAll('.existing-item').length;
                     if (existingCount + dt.files.length === 0) { e.preventDefault(); alert('Envie ao menos uma imagem para o produto.'); return; }
-
-                    // validação do desconto no cliente
-                    if (descontoSim && descontoSim.checked) {
-                        const dvalRaw = descontoInput ? descontoInput.value.trim() : '';
-                        if (dvalRaw === '' || isNaN(dvalRaw)) { e.preventDefault(); alert('Informe um valor de desconto válido (0-60).'); return; }
-                        const dv = Number(dvalRaw);
-                        if (dv < 0 || dv > 60) { e.preventDefault(); alert('O desconto deve estar entre 0 e 60%.'); return; }
-                    }
-                    // attach dt.files to input já é feito em renderPreviews
+                    // attach dt.files to input already performed in renderPreviews
                 });
             }
         })();
