@@ -8,6 +8,11 @@ if (empty($_SESSION['id'])) {
     echo json_encode(['ok' => false, 'error' => 'not_logged']);
     exit;
 }
+$csrf = $_POST['csrf_token'] ?? '';
+if (empty($csrf) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf)) {
+    echo json_encode(['ok' => false, 'error' => 'bad_csrf']);
+    exit;
+}
 $de = (int) $_SESSION['id'];
 $produto = isset($_POST['produto_id']) ? (int) $_POST['produto_id'] : null;
 $para = isset($_POST['to_user_id']) ? (int) $_POST['to_user_id'] : null;

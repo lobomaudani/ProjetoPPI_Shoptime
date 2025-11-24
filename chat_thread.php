@@ -22,15 +22,6 @@ if (!$other) {
     echo "Usuário de conversa não especificado.";
     exit;
 }
-
-// load product details if any
-$produtoRow = null;
-if ($produto) {
-    $pstmt = $conexao->prepare('SELECT idProdutos, Nome FROM produtos WHERE idProdutos = :pid');
-    $pstmt->execute([':pid' => $produto]);
-    $produtoRow = $pstmt->fetch(PDO::FETCH_ASSOC);
-}
-
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -67,7 +58,9 @@ if ($produto) {
                 onclick="location.href='chat.php'">&#8592;</button>
             <img src="<?php echo htmlspecialchars($prodThumb); ?>" alt="produto" class="chat-product-thumb">
             <div>
-                <div class="chat-head-title"><?php echo htmlspecialchars($produtoRow['Nome'] ?? 'Conversa'); ?></div>
+                <div class="chat-head-title" style="color:#000">
+                    <?php echo htmlspecialchars($produtoRow['Nome'] ?? 'Conversa'); ?>
+                </div>
                 <div class="text-muted small">
                     <?php echo htmlspecialchars($t = ($produtoRow ? 'Discussões sobre este produto' : 'Conversa')); ?>
                 </div>
@@ -146,9 +139,20 @@ if ($produto) {
                 const fd = new FormData();
                 fd.append('produto_id', produtoId);
                 fd.append('other_user_id', otherId);
+                try { fd.append('csrf_token', window.__CSRF_TOKEN || ''); } catch (e) { }
                 fetch('mark_read.php', { method: 'POST', body: fd }).then(r => r.json()).then(j => {
-                    // update unread badge immediately if header exposes a refresh function
-                    try { if (window.refreshUnreadCount) window.refreshUnreadCount(); } catch (ex) { }
+                    // request the current unread count and update the floating badge immediately
+                    try {
+                        fetch('get_unread_count.php', { cache: 'no-store' }).then(r2 => r2.json()).then(j2 => {
+                            if (j2 && j2.ok) {
+                                const b = document.getElementById('chatUnreadBadge');
+                                if (b) {
+                                    const count = parseInt(j2.count || 0, 10);
+                                    if (!count || count <= 0) { b.style.display = 'none'; } else { b.style.display = 'flex'; b.textContent = count > 99 ? '99+' : String(count); }
+                                }
+                            }
+                        }).catch(() => { });
+                    } catch (e) { }
                 }).catch(e => { /* ignore */ });
             } catch (e) { }
         }
@@ -162,6 +166,7 @@ if ($produto) {
             fd.append('produto_id', produtoId);
             fd.append('to_user_id', otherId);
             fd.append('mensagem', text);
+            try { fd.append('csrf_token', window.__CSRF_TOKEN || ''); } catch (e) { }
             fetch('send_message.php', { method: 'POST', body: fd }).then(r => r.json()).then(j => {
                 if (j.ok && j.message) {
                     // if we had an empty-state, clear it
@@ -190,8 +195,6 @@ if ($produto) {
                 sendMessage();
             }
         });
-
-        // When marking messages read, notify header to refresh unread badge if available
     </script>
 </body>
 

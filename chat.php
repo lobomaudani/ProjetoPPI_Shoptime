@@ -24,39 +24,96 @@ $stmt->execute([':me' => $me]);
 $convs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // enrich with product and user names
+// Batch-fetch last messages, products, users and thumbs to avoid N+1 queries
 $threads = [];
-foreach ($convs as $c) {
-    $lastId = (int) $c['last_id'];
-    // fetch last message
-    $lm = $conexao->prepare('SELECT m.*, u.Nome AS deNome FROM mensagens m LEFT JOIN usuarios u ON u.idUsuarios = m.DeUsuarios_idUsuarios WHERE m.id = :id LIMIT 1');
-    $lm->execute([':id' => $lastId]);
-    $last = $lm->fetch(PDO::FETCH_ASSOC);
-    $produto = null;
-    $otherUser = null;
-    if ($c['produto_id']) {
-        $p = $conexao->prepare('SELECT idProdutos, Nome FROM produtos WHERE idProdutos = :pid');
-        $p->execute([':pid' => $c['produto_id']]);
-        $produto = $p->fetch(PDO::FETCH_ASSOC);
-        // try to get a thumbnail for this product
-        $img = $conexao->prepare('SELECT ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos = :pid LIMIT 1');
-        $img->execute([':pid' => $c['produto_id']]);
-        $imgRow = $img->fetch(PDO::FETCH_ASSOC);
-        $thumb = 'images/no-image.png';
-        if ($imgRow && !empty($imgRow['ImagemUrl'])) {
-            $d = $imgRow['ImagemUrl'];
-            if (is_string($d) && (strpos($d, 'data:') === 0 || strpos($d, 'uploads/') === 0 || strpos($d, 'images/') === 0 || strpos($d, 'http') === 0)) {
-                $thumb = $d;
-            } else {
-                // assume binary blob
-                $thumb = 'data:image/jpeg;base64,' . base64_encode($d);
-            }
+$lastIds = array_map(function ($c) {
+    return (int) $c['last_id']; }, $convs);
+$lastIds = array_values(array_unique($lastIds));
+if (count($lastIds) > 0) {
+    // fetch all last messages in one query
+    $in = implode(',', array_fill(0, count($lastIds), '?'));
+    $stmt = $conexao->prepare('SELECT m.*, u.Nome AS deNome FROM mensagens m LEFT JOIN usuarios u ON u.idUsuarios = m.DeUsuarios_idUsuarios WHERE m.id IN (' . $in . ')');
+    $stmt->execute($lastIds);
+    $lastRows = [];
+    while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $lastRows[(int) $r['id']] = $r;
+    }
+
+    // collect product ids and user ids
+    $productIds = [];
+    $userIds = [];
+    foreach ($convs as $c) {
+        if ($c['produto_id'])
+            $productIds[] = (int) $c['produto_id'];
+        $lid = (int) $c['last_id'];
+        if (isset($lastRows[$lid])) {
+            $m = $lastRows[$lid];
+            $otherId = ((int) $m['DeUsuarios_idUsuarios'] === $me) ? (int) $m['ParaUsuarios_idUsuarios'] : (int) $m['DeUsuarios_idUsuarios'];
+            $userIds[] = $otherId;
         }
     }
-    $otherId = ($last['DeUsuarios_idUsuarios'] == $me) ? (int) $last['ParaUsuarios_idUsuarios'] : (int) $last['DeUsuarios_idUsuarios'];
-    $ou = $conexao->prepare('SELECT idUsuarios, Nome FROM usuarios WHERE idUsuarios = :id');
-    $ou->execute([':id' => $otherId]);
-    $otherUser = $ou->fetch(PDO::FETCH_ASSOC);
-    $threads[] = ['produto' => $produto, 'other' => $otherUser, 'last' => $last, 'thumb' => $thumb ?? 'images/no-image.png'];
+    $productIds = array_values(array_unique($productIds));
+    $userIds = array_values(array_unique($userIds));
+
+    // fetch products
+    $products = [];
+    if (count($productIds) > 0) {
+        $in = implode(',', array_fill(0, count($productIds), '?'));
+        $pstmt = $conexao->prepare('SELECT idProdutos, Nome FROM produtos WHERE idProdutos IN (' . $in . ')');
+        $pstmt->execute($productIds);
+        while ($r = $pstmt->fetch(PDO::FETCH_ASSOC)) {
+            $products[(int) $r['idProdutos']] = $r;
+        }
+
+        // fetch one image per product (may return multiple; we'll pick first)
+        $imgStmt = $conexao->prepare('SELECT Produtos_idProdutos, ImagemUrl FROM enderecoimagem WHERE Produtos_idProdutos IN (' . $in . ')');
+        $imgStmt->execute($productIds);
+        $thumbs = [];
+        while ($ir = $imgStmt->fetch(PDO::FETCH_ASSOC)) {
+            $pid = (int) $ir['Produtos_idProdutos'];
+            if (!isset($thumbs[$pid]))
+                $thumbs[$pid] = $ir['ImagemUrl'];
+        }
+    } else {
+        $thumbs = [];
+    }
+
+    // fetch users
+    $users = [];
+    if (count($userIds) > 0) {
+        $in = implode(',', array_fill(0, count($userIds), '?'));
+        $ustmt = $conexao->prepare('SELECT idUsuarios, Nome FROM usuarios WHERE idUsuarios IN (' . $in . ')');
+        $ustmt->execute($userIds);
+        while ($ur = $ustmt->fetch(PDO::FETCH_ASSOC)) {
+            $users[(int) $ur['idUsuarios']] = $ur;
+        }
+    }
+
+    // build threads preserving order from $convs
+    foreach ($convs as $c) {
+        $lid = (int) $c['last_id'];
+        $last = $lastRows[$lid] ?? null;
+        $produto = null;
+        $thumb = 'images/no-image.png';
+        if ($c['produto_id']) {
+            $pid = (int) $c['produto_id'];
+            $produto = $products[$pid] ?? null;
+            if (isset($thumbs[$pid]) && $thumbs[$pid]) {
+                $d = $thumbs[$pid];
+                if (is_string($d) && (strpos($d, 'data:') === 0 || strpos($d, 'uploads/') === 0 || strpos($d, 'images/') === 0 || strpos($d, 'http') === 0)) {
+                    $thumb = $d;
+                } else {
+                    $thumb = 'data:image/jpeg;base64,' . base64_encode($d);
+                }
+            }
+        }
+        $otherUser = null;
+        if ($last) {
+            $otherId = ((int) $last['DeUsuarios_idUsuarios'] === $me) ? (int) $last['ParaUsuarios_idUsuarios'] : (int) $last['DeUsuarios_idUsuarios'];
+            $otherUser = $users[$otherId] ?? null;
+        }
+        $threads[] = ['produto' => $produto, 'other' => $otherUser, 'last' => $last, 'thumb' => $thumb];
+    }
 }
 
 ?>
@@ -68,6 +125,108 @@ foreach ($convs as $c) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link href="styles/styles.css" rel="stylesheet">
     <title>Conversas - ShowTime</title>
+    <style>
+        .chat-shell {
+            display: flex;
+            gap: 18px;
+        }
+
+        .chat-sidebar {
+            width: 340px;
+            flex: 0 0 340px;
+            background: #fff;
+            border: 1px solid #e6e6e6;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .chat-main {
+            flex: 1 1 auto;
+            min-height: 60vh;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 18px;
+            border: 1px solid #eee;
+        }
+
+        .conv-search {
+            margin-bottom: 10px;
+        }
+
+        .conv-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 72vh;
+            overflow: auto;
+        }
+
+        .conv-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .conv-item:hover {
+            background: #fbfbfb;
+        }
+
+        .conv-thumb {
+            width: 56px;
+            height: 56px;
+            border-radius: 6px;
+            object-fit: cover;
+            flex: 0 0 56px;
+            border: 1px solid #e9e9e9
+        }
+
+        .conv-meta {
+            flex: 1 1 auto;
+            min-width: 0
+        }
+
+        .conv-name {
+            font-weight: 600;
+            margin-bottom: 4px
+        }
+
+        .conv-product {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 6px
+        }
+
+        .conv-last {
+            color: #777;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .conv-time {
+            font-size: 0.8rem;
+            color: #999;
+            margin-left: 8px
+        }
+
+        .no-convs {
+            color: #666
+        }
+
+        /* scrollbar small */
+        .conv-list::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .conv-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 6px
+        }
+    </style>
 </head>
 
 <body>
@@ -105,7 +264,7 @@ foreach ($convs as $c) {
                                         <div class="conv-time"><?php echo $time; ?></div>
                                     </div>
                                     <?php if (!empty($t['produto'])): ?>
-                                        <div class="conv-product"><?php echo htmlspecialchars($t['produto']['Nome'] ?? ''); ?></div>
+                                        <div class="conv-product"><?php echo htmlspecialchars($t['produto']['Nome']); ?></div>
                                     <?php endif; ?>
                                     <div class="conv-last"><?php echo $lastMsg; ?></div>
                                 </div>
