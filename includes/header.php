@@ -15,6 +15,11 @@ if ($appBase === '')
     $appBase = '';
 // expose to JS
 echo "<script>window.APP_BASE = '" . addslashes($appBase) . "';</script>\n";
+// If the including page set NO_HEADER, keep CSRF and APP_BASE but skip rendering the header HTML
+if (defined('NO_HEADER') && NO_HEADER) {
+    echo "<!-- Header suppressed by NO_HEADER flag -->\n";
+    return;
+}
 ?>
 <header>
     <div class="header-inner">
