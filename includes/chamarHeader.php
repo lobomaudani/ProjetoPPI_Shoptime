@@ -4,15 +4,12 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     @session_start();
 }
 
-// compute application base URL (strip /admin/... when inside admin)
-$appBase = preg_replace('#/admin(?:/.*)?$#', '', str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])));
-
 // Saída HTML para a área do usuário
 if (empty($_SESSION['loggedin'])) {
     ?>
     <div class="user-actions-generic">
-        <div class="user-actions-line"><a href="<?php echo $appBase; ?>/login.php">Entre</a> ou</div>
-        <div class="user-actions-line"><a href="<?php echo $appBase; ?>/register.php" class="user-actions-links">Cadastre-se</a></div>
+        <div class="user-actions-line"><a href="login.php">Entre</a> ou</div>
+        <div class="user-actions-line"><a href="register.php" class="user-actions-links">Cadastre-se</a></div>
     </div>
     <?php
 } else {
@@ -40,13 +37,13 @@ if (empty($_SESSION['loggedin'])) {
 
         <!-- Menu (custom dropup) -->
         <ul id="user-dropdown" class="user-menu" role="menu" aria-labelledby="user-name-trigger">
-            <li role="none"><a role="menuitem" href="<?php echo $appBase; ?>/usuario.php">Conta</a></li>
-            <li role="none"><a role="menuitem" href="<?php echo $appBase; ?>/meusProdutos.php">Meus Produtos</a></li>
+            <li role="none"><a role="menuitem" href="usuario.php">Conta</a></li>
+            <li role="none"><a role="menuitem" href="meusProdutos.php">Meus Produtos</a></li>
             <?php if (!empty($_SESSION['cargo']) && (int) $_SESSION['cargo'] === 1): ?>
-                <li role="none"><a role="menuitem" href="<?php echo $appBase; ?>/admin/dashboard.php">Administração</a></li>
+                <li role="none"><a role="menuitem" href="admin/index.php">Área Admin</a></li>
             <?php endif; ?>
             <li role="separator" class="divider" aria-hidden="true"></li>
-            <li role="none"><a role="menuitem" href="<?php echo $appBase; ?>/logout.php">Sair</a></li>
+            <li role="none"><a role="menuitem" href="logout.php">Sair</a></li>
         </ul>
 
         <a href="favoritos.php" class="fav-link" title="Favoritos">

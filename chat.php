@@ -27,7 +27,8 @@ $convs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Batch-fetch last messages, products, users and thumbs to avoid N+1 queries
 $threads = [];
 $lastIds = array_map(function ($c) {
-    return (int) $c['last_id']; }, $convs);
+    return (int) $c['last_id'];
+}, $convs);
 $lastIds = array_values(array_unique($lastIds));
 if (count($lastIds) > 0) {
     // fetch all last messages in one query

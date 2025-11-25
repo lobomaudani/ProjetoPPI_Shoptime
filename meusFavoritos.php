@@ -125,7 +125,8 @@ function e($s)
                                         &nbsp;<strong class="text-danger">R$
                                             <?php echo number_format($discountedPrice, 2, ',', '.'); ?></strong>
                                     <div class="small text-success">Economize
-                                        <?php echo htmlspecialchars(number_format($disc, 2, ',', '.')); ?>%</div>
+                                        <?php echo htmlspecialchars(number_format($disc, 2, ',', '.')); ?>%
+                                    </div>
                                     </p>
                                 <?php else: ?>
                                     <p class="mb-1 text-muted">R$ <?php echo number_format($it['Preco'], 2, ',', '.'); ?></p>
@@ -178,6 +179,7 @@ function e($s)
     <?php
     ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 
 </html>

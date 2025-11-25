@@ -423,7 +423,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             </div>
                                             <div class="col-auto">
                                                 <div class="form-text mb-0">Limite máximo:
-                                                    <?php echo (int) $MAX_DISCOUNT; ?>%</div>
+                                                    <?php echo (int) $MAX_DISCOUNT; ?>%
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

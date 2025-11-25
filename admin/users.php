@@ -1,4 +1,99 @@
 <?php
+// Admin users list + delete
+if (session_status() !== PHP_SESSION_ACTIVE)
+    session_start();
+if (empty($_SESSION['id']) || empty($_SESSION['cargo']) || (int) $_SESSION['cargo'] !== 1) {
+    header('Location: ../index.php');
+    exit;
+}
+include_once __DIR__ . '/../includes/header.php';
+include_once __DIR__ . '/../includes/user_helpers.php';
+include_once __DIR__ . '/../connections/conectarBD.php';
+
+$message = '';
+// handle delete
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']) && $_POST['action'] === 'delete') {
+    $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+    if (!validate_csrf_token($_POST['csrf_token'] ?? null)) {
+        $message = 'Token CSRF inválido.';
+    } elseif ($id <= 0) {
+        $message = 'ID inválido.';
+    } else {
+        // prevent deleting administrator accounts via this simple UI
+        try {
+            $r = $conexao->prepare('SELECT Cargos_idCargos FROM usuarios WHERE idUsuarios = :id LIMIT 1');
+            $r->execute([':id' => $id]);
+            $role = $r->fetchColumn();
+            if ($role == 1) {
+                $message = 'Remoção de administradores não permitida por aqui.';
+            } else {
+                $stmt = $conexao->prepare('DELETE FROM usuarios WHERE idUsuarios = :id');
+                $stmt->execute([':id' => $id]);
+                $message = 'Usuário apagado.';
+            }
+        } catch (Exception $e) {
+            $message = 'Falha ao apagar: ' . $e->getMessage();
+        }
+    }
+}
+
+// fetch users
+try {
+    $stmt = $conexao->prepare('SELECT u.idUsuarios, u.Nome, u.Email, u.Cargos_idCargos, c.Nome as CargoNome FROM usuarios u LEFT JOIN cargos c ON u.Cargos_idCargos = c.idCargos ORDER BY u.idUsuarios DESC LIMIT 200');
+    $stmt->execute();
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $users = [];
+}
+?>
+<main style="padding:18px;">
+    <h1>Gerenciar Usuários</h1>
+    <?php if ($message): ?>
+        <div class="alert alert-info"><?php echo htmlspecialchars($message); ?></div>
+    <?php endif; ?>
+
+    <div style="margin-bottom:12px;">
+        <a class="btn btn-light" href="index.php">Voltar</a>
+    </div>
+
+    <table class="table" style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Cargo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($users as $u): ?>
+                <tr>
+                    <td><?php echo (int) $u['idUsuarios']; ?></td>
+                    <td><?php echo htmlspecialchars($u['Nome'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($u['Email'], ENT_QUOTES, 'UTF-8'); ?></td>
+                    <td><?php echo htmlspecialchars($u['CargoNome'] ?? $u['Cargos_idCargos']); ?></td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary"
+                            href="../usuario.php?id=<?php echo (int) $u['idUsuarios']; ?>">Ver / Editar</a>
+                        <?php if ((int) $u['Cargos_idCargos'] !== 1): ?>
+                            <form method="POST" action="" style="display:inline;margin-left:6px;"
+                                onsubmit="return confirm('Apagar este usuário?');">
+                                <?php echo csrf_input(); ?>
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?php echo (int) $u['idUsuarios']; ?>">
+                                <button class="btn btn-sm btn-danger" type="submit">Apagar</button>
+                            </form>
+                        <?php else: ?>
+                            <span style="color:#666;margin-left:6px;">(Administrador)</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</main>
+<?php
 session_start();
 include_once __DIR__ . '/../connections/conectarBD.php';
 include_once __DIR__ . '/../includes/user_helpers.php';

@@ -9,13 +9,19 @@ if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(16));
     }
 }
+// compute application base (strip /admin path when included from admin)
+$appBase = preg_replace('#/admin(?:/.*)?$#', '', str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])));
+if ($appBase === '')
+    $appBase = '';
+// expose to JS
+echo "<script>window.APP_BASE = '" . addslashes($appBase) . "';</script>\n";
 ?>
 <header>
     <div class="header-inner">
         <?php include 'logo.inc'; ?>
 
         <div class="search-bar" style="margin: 10px 10px;">
-            <form action="pesquisaProdutos.php" method="GET" class="d-flex" role="search">
+            <form action="<?php echo $appBase; ?>/pesquisaProdutos.php" method="GET" class="d-flex" role="search">
                 <?php $searchTerm = isset($_GET['q']) ? $_GET['q'] : ''; ?>
                 <input class="form-control me-2" type="search" name="q" placeholder="Buscar produtos..."
                     aria-label="Buscar produtos" required
@@ -46,9 +52,10 @@ if (empty($_SESSION['csrf_token'])) {
     </div>
 
     <button id="btnOfertas" class="btn btn-outline-light">Ofertas</button>
-    <button onclick="location.href='pesquisaProdutos.php?filtro=mais_favoritados'" class="btn btn-outline-light">Mais
+    <button onclick="location.href='<?php echo $appBase; ?>/pesquisaProdutos.php?filtro=mais_favoritados'"
+        class="btn btn-outline-light">Mais
         Favoritados</button>
-    <button onclick="location.href='pesquisaProdutos.php?filtro=lancamentos'"
+    <button onclick="location.href='<?php echo $appBase; ?>/pesquisaProdutos.php?filtro=lancamentos'"
         class="btn btn-outline-light">Lançamentos</button>
 </nav>
 
@@ -164,7 +171,7 @@ if (empty($_SESSION['csrf_token'])) {
         document.addEventListener('mousedown', function (ev) { if (panel && panel.style.display === 'block' && !panel.contains(ev.target) && ev.target !== trigger) closePanel(); });
 
         function fetchCategories() {
-            fetch('categoria_lookup.php').then(r => r.json()).then(j => {
+            fetch(window.APP_BASE + '/categoria_lookup.php').then(r => r.json()).then(j => {
                 if (j && j.ok) {
                     cached = j.categories || [];
                     renderList(cached);
@@ -186,7 +193,7 @@ if (empty($_SESSION['csrf_token'])) {
                 row.dataset.id = c.id;
                 row.addEventListener('click', function () {
                     // navigate to pesquisaProducts filtered by category id
-                    window.location = 'pesquisaProdutos.php?categoria=' + encodeURIComponent(this.dataset.id);
+                    window.location = window.APP_BASE + '/pesquisaProdutos.php?categoria=' + encodeURIComponent(this.dataset.id);
                 });
                 results.appendChild(row);
             }
@@ -211,7 +218,7 @@ if (empty($_SESSION['csrf_token'])) {
 
         // Offers button -> filter by desconto
         if (ofertasBtn) ofertasBtn.addEventListener('click', function () {
-            window.location = 'pesquisaProdutos.php?desconto=1';
+            window.location = window.APP_BASE + '/pesquisaProdutos.php?desconto=1';
         });
     });
 </script>
@@ -286,7 +293,7 @@ if (empty($_SESSION['csrf_token'])) {
 
         async function fetchUnread() {
             try {
-                const res = await fetch('get_unread_count.php', { cache: 'no-store' });
+                const res = await fetch(window.APP_BASE + '/get_unread_count.php', { cache: 'no-store' });
                 const j = await res.json();
                 if (j && j.ok) updateBadge(parseInt(j.count || 0));
             } catch (e) {
@@ -298,11 +305,11 @@ if (empty($_SESSION['csrf_token'])) {
         // click action: open chat list or go to login
         chatFab.addEventListener('click', function () {
             if (!isLogged) {
-                window.location = 'login.php';
+                window.location = window.APP_BASE + '/login.php';
                 return;
             }
             // open chat list
-            window.location = 'chat.php';
+            window.location = window.APP_BASE + '/chat.php';
         });
 
         // start polling only if logged in (cheap fallback: still hits endpoint which returns not_logged)
